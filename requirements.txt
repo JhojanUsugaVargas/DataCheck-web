@@ -7,4 +7,9 @@ duckduckgo-search
 tabulate
 waitress
 pytest
+<<<<<<< HEAD
 pyotp
+=======
+requests
+python-dotenv
+>>>>>>> ad5aa99 (Cambios en Dockerfile, secrets y requirements)

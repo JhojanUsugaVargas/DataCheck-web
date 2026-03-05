@@ -7,6 +7,7 @@
     <title>DataCheck — Login</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://www.google.com/recaptcha/api.js" async defer></script>
     <style>
         * {
             margin: 0;
@@ -338,6 +339,13 @@
                     <p style="font-size: 11px; color: rgba(160, 170, 220, 0.6); margin-top: 8px;">Ingresa el código de 6
                         dígitos de tu app de Microsoft Authenticator.</p>
                 </div>
+
+                <!-- Google reCAPTCHA Widget -->
+                <div class="form-group" style="display: flex; justify-content: center; margin-top: 10px;">
+                    <div class="g-recaptcha" data-sitekey="6LfrMIAsAAAAAAAXkryvn4lD423OJJ87SeD7uB09" data-theme="dark">
+                    </div>
+                </div>
+
                 <button type="submit" class="login-btn" id="loginBtn">Iniciar Sesión</button>
             </form>
 
@@ -371,10 +379,12 @@
 
             try {
                 const token = document.getElementById('mfaToken').value.trim();
+                const recaptcha_token = grecaptcha.getResponse();
+
                 const res = await fetch('/api/login', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ username, password, token })
+                    body: JSON.stringify({ username, password, token, recaptcha_token })
                 });
 
                 if (progBar) {
@@ -408,6 +418,9 @@
                     errorMsg.style.display = 'block';
                     btn.classList.remove('loading');
                     btn.textContent = 'Iniciar Sesión';
+
+                    // Reset reCAPTCHA on failure
+                    grecaptcha.reset();
                 }
             } catch (err) {
                 const topOverlay = document.getElementById('loadingOverlay');

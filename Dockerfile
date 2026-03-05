@@ -28,11 +28,21 @@ WORKDIR /app
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
+<<<<<<< HEAD
 # Copiar código
+=======
+# Copiar el resto de la aplicación (incluyendo backend y frontend)
+>>>>>>> ad5aa99 (Cambios en Dockerfile, secrets y requirements)
 COPY . .
 
 # Puerto de la aplicación
 EXPOSE 5000
 
+<<<<<<< HEAD
 # Ejecutar aplicación
 CMD ["python", "run_prod.py"]
+=======
+# Comando para ejecutar la aplicación usando Waitress
+# Se ejecuta desde la raíz indicando la ruta al script de producción
+CMD ["python", "backend/run_prod.py"]
+>>>>>>> ad5aa99 (Cambios en Dockerfile, secrets y requirements)

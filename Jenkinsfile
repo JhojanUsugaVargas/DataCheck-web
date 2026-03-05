@@ -24,7 +24,8 @@ pipeline {
         stage('Run Unit Tests') {
             steps {
                 echo 'Ejecutando pruebas de calidad (PyTest)...'
-                bat "${PYTHON} -m pytest test_app.py"
+                // Las pruebas se ejecutan si existen en el backend
+                bat "${PYTHON} -m pytest backend/"
             }
         }
 
