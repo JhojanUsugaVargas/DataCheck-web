@@ -10,6 +10,10 @@
         href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap"
         rel="stylesheet">
     <link rel="stylesheet" href="/static/style.css">
+    <script>
+        window.currentContractId = "{{ current_contract_id }}";
+        window.currentInstanceId = "{{ current_instance_id }}";
+    </script>
 </head>
 
 <body>
@@ -282,6 +286,7 @@
                             <th>Usuario</th>
                             <th>Nombre</th>
                             <th>Rol</th>
+                            <th>Seguridad (MFA)</th>
                             <th>Acciones</th>
                         </tr>
                     </thead>

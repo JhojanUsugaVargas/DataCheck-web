@@ -461,12 +461,25 @@ async function loadUsers() {
 
         users.forEach(u => {
             const tr = document.createElement('tr');
+
+            const mfaStatus = u.mfa_enabled ? '✅' : '❌';
+            const isActive = u.is_active !== undefined ? u.is_active : true;
+            const statusClass = isActive ? '' : 'style="opacity: 0.5; background: rgba(239, 68, 68, 0.1);"';
+            const toggleIcon = isActive ? '🚫' : '✅';
+            const toggleTitle = isActive ? 'Inactivar' : 'Activar';
+
             tr.innerHTML = `
-                <td>${u.username}</td>
-                <td>${u.full_name}</td>
-                <td><span class="role-badge role-${u.role.toLowerCase()}">${u.role}</span></td>
+                <td ${statusClass}>${u.username}</td>
+                <td ${statusClass}>${u.full_name}</td>
+                <td ${statusClass}><span class="role-badge role-${u.role.toLowerCase()}">${u.role}</span></td>
+                <td ${statusClass} style="text-align: center;">${mfaStatus}</td>
                 <td>
-                    <button class="quick-btn" style="padding: 4px 8px; font-size: 11px; margin: 0;" onclick="resetPassword('${u.username}')">Reset Pass</button>
+                    <div style="display: flex; gap: 5px; justify-content: flex-start;">
+                        <button class="quick-btn" title="Renombrar" style="padding: 4px; border: none; background: transparent; font-size: 14px;" onclick="renameUser('${u.username}', '${u.full_name}')">✏️</button>
+                        <button class="quick-btn" title="Resetear Password" style="padding: 4px; border: none; background: transparent; font-size: 14px;" onclick="resetPassword('${u.username}')">🔑</button>
+                        <button class="quick-btn" title="${toggleTitle}" style="padding: 4px; border: none; background: transparent; font-size: 14px;" onclick="toggleUserStatus('${u.username}')">${toggleIcon}</button>
+                        <button class="quick-btn" title="Eliminar" style="padding: 4px; border: none; background: transparent; font-size: 14px;" onclick="deleteUser('${u.username}')">🗑️</button>
+                    </div>
                 </td>
             `;
             tbody.appendChild(tr);
@@ -619,6 +632,13 @@ async function loadInstances() {
                 opt.textContent = inst.name;
                 instanceSelector.appendChild(opt);
             });
+            // Pre-seleccionar si corresponde
+            if (window.currentInstanceId) {
+                instanceSelector.value = window.currentInstanceId;
+                window.currentInstanceId = null; // Limpiar para que no interfiera después
+            } else {
+                window.firstLoad = false; // Ya no es carga inicial si no hay ID predefinido
+            }
             // trigger first selection if desired, or let user pick
             changeInstance();
         }
@@ -713,3 +733,66 @@ async function addInstance(e) {
 
 // ── Focus input on load ──
 document.getElementById('chatInput').focus();
+
+async function renameUser(username, currentName) {
+    const newName = prompt(`Escribe el nuevo nombre para el usuario ${username}:`, currentName);
+    if (!newName || newName === currentName) return;
+
+    try {
+        const res = await fetch('/api/admin/users/rename', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ username: username, new_name: newName })
+        });
+        const data = await res.json();
+        if (data.success) {
+            alert(data.message);
+            loadUsers();
+        } else {
+            alert('Error: ' + data.error);
+        }
+    } catch (err) {
+        alert('Error de conexión');
+    }
+}
+
+async function toggleUserStatus(username) {
+    if (!confirm(`¿Seguro que deseas cambiar el estado del usuario ${username}?`)) return;
+
+    try {
+        const res = await fetch('/api/admin/users/toggle_status', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ username: username })
+        });
+        const data = await res.json();
+        if (data.success) {
+            loadUsers();
+        } else {
+            alert('Error: ' + data.error);
+        }
+    } catch (err) {
+        alert('Error de conexión');
+    }
+}
+
+async function deleteUser(username) {
+    if (!confirm(`⚠️ ATENCIÓN: ¿Estás ABSOLUTAMENTE SEGURO de eliminar al usuario ${username}? Esta acción no se puede deshacer.`)) return;
+
+    try {
+        const res = await fetch('/api/admin/users/delete', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ username: username })
+        });
+        const data = await res.json();
+        if (data.success) {
+            alert(data.message);
+            loadUsers();
+        } else {
+            alert('Error: ' + data.error);
+        }
+    } catch (err) {
+        alert('Error de conexión');
+    }
+}
