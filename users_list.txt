@@ -1,0 +1,3 @@
+USER:admin|ROLE:Admin|NAME:Administrator
+USER:superadmin|ROLE:SuperAdmin|NAME:Super Administrator
+USER:Monitoreo|ROLE:Monitor|NAME:Arley Vargas

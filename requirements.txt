@@ -1,0 +1,10 @@
+flask>=3.0
+pyodbc
+psutil
+cryptography
+google-generativeai
+duckduckgo-search
+tabulate
+waitress
+pytest
+pyotp

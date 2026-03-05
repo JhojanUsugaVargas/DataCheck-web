@@ -1,0 +1,8 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: datacheck-config
+  namespace: datacheck-web
+data:
+  FLASK_SECRET_KEY: "datacheck-web-secret-key-2026"
+  PORT: "5000"
