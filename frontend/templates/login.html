@@ -341,7 +341,7 @@
                 </div>
 
                 <!-- Google reCAPTCHA Widget -->
-                {% if site_key %}
+                {% if site_key and config.get('RECAPTCHA_ENABLED', 'true').lower() != 'false' %}
                 <div class="form-group" style="display: flex; justify-content: center; margin-top: 10px;">
                     <div class="g-recaptcha" data-sitekey="{{ site_key }}" data-theme="dark">
                     </div>
