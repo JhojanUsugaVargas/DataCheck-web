@@ -1,5 +1,8 @@
 apiVersion: apps/v1
 kind: Deployment
+metadata:
+  name: datacheck-web
+  namespace: datacheck-web
 spec:
   replicas: 1
   selector:
@@ -12,7 +15,7 @@ spec:
     spec:
       containers:
         - name: datacheck-web
-          image: datacheck-web:v2
+          image: datacheck-web:v9
           ports:
             - containerPort: 5000
               protocol: TCP
@@ -37,6 +40,10 @@ spec:
                 secretKeyRef:
                   name: datacheck-secrets
                   key: GEMINI_API_KEY
+            - name: APP_BASE_URL
+              value: "/app/datacheck"
+            - name: RECAPTCHA_ENABLED
+              value: "false"
           resources:
             limits:
               cpu: 500m

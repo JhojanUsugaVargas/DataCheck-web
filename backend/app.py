@@ -5,6 +5,7 @@ Entry point that register Blueprints and global configurations.
 import os
 import logging
 from flask import Flask, render_template, session, redirect, url_for, jsonify, request
+from werkzeug.middleware.proxy_fix import ProxyFix
 from utils.config import SECRET_KEY, get_db_connection, get_available_contracts, get_instances_by_contract
 
 # Import Blueprints
@@ -17,6 +18,10 @@ from utils.decorators import login_required, role_required
 app = Flask(__name__, 
             static_folder='../frontend/static', 
             template_folder='../frontend/templates')
+
+# Inform Flask to trust reverse proxy headers, especially for prefix mapping
+app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1, x_host=1, x_prefix=1)
+
 app.secret_key = SECRET_KEY
 app.permanent_session_lifetime = 1800  # 30 minutes
 
@@ -27,12 +32,21 @@ app.register_blueprint(dba_bp)
 app.register_blueprint(chat_bp)
 
 # Logging configuration
-logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
 
 @app.before_request
 def log_request_info():
-    # logging.info(f"Request: {request.method} {request.url}")
-    pass
+    logging.debug(f"[{request.remote_addr}] Request: {request.method} {request.url}")
+    logging.debug(f"Headers: {dict(request.headers)}")
+
+# ============================================================
+#  INYECCIÓN DE VARIABLES GLOBALES EN TEMPLATES
+# ============================================================
+@app.context_processor
+def inject_global_vars():
+    # Extraer la variable de entorno, si no existe o termina en slash, la limpia
+    base_url = os.environ.get('APP_BASE_URL', '').rstrip('/')
+    return dict(APP_BASE_URL=base_url)
 
 # ============================================================
 #  MAIN ROUTES (General)
@@ -160,6 +174,7 @@ def page_not_found(e):
 
 @app.errorhandler(500)
 def server_error(e):
+    logging.exception(f"Error interno del servidor: {e}")
     return jsonify({'error': 'Error interno del servidor'}), 500
 
 if __name__ == '__main__':
