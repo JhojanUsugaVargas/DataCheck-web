@@ -1,15 +1,17 @@
 pipeline {
-    agent {
-        label 'vbogdtlmosp11'
-    }
+    agent none
 
     environment {
         BASE_VERSION = 11
     }
 
-    stages {
+    triggers {
+        pollSCM('H/5 * * * *')
+    }
 
+    stages {
         stage('Checkout') {
+            agent { label 'vbogdtlmosp11' }
             steps {
                 echo 'Descargando código del repositorio...'
                 checkout scm
@@ -17,65 +19,49 @@ pipeline {
         }
 
         stage('Validate Tools') {
+            agent { label 'vbogdtlmosp11' }
             steps {
-                // Ejecutar nerdctl como root usando here-document
-                sh """
-                sudo su - <<'EOF'
-                cd ${WORKSPACE}
-                /usr/local/bin/nerdctl --version
-                EOF
-                """
+                sh "sudo -i bash -c 'export PATH=/usr/local/bin:\$PATH; cd ${WORKSPACE} && nerdctl --version'"
             }
         }
 
         stage('Build Image') {
+            agent { label 'vbogdtlmosp11' }
             steps {
                 script {
                     def buildNum = env.BUILD_NUMBER.toInteger()
                     env.NEW_VERSION = "v${BASE_VERSION + buildNum}"
-
                     echo "Construyendo imagen versión: ${env.NEW_VERSION}"
-
-                    sh """
-                    sudo su - <<'EOF'
-                    cd ${WORKSPACE}
-                    /usr/local/bin/nerdctl -n k8s.io build -t datacheck-web:${env.NEW_VERSION} .
-                    EOF
-                    """
+                    
+                    sh "sudo -i bash -c 'export PATH=/usr/local/bin:\$PATH; cd ${WORKSPACE} && nerdctl -n k8s.io build -t datacheck-web:${env.NEW_VERSION} .'"
                 }
             }
         }
 
-        stage('Patch Deployment') {
+        stage('Patch Deployment YAML') {
+            agent { label 'vbogdtlmosp11' }
             steps {
-                // Actualizar deployment.yaml con la nueva imagen
-                sh """
-                sudo su - <<'EOF'
-                cd ${WORKSPACE}
-                sed -i 's|image: datacheck-web:v.*|image: datacheck-web:${env.NEW_VERSION}|g' k8s/deployment.yaml
-                EOF
-                """
+                sh "sudo -i bash -c 'export PATH=/usr/local/bin:\$PATH; cd ${WORKSPACE} && sed -i \"s|image: datacheck-web:v.*|image: datacheck-web:${env.NEW_VERSION}|g\" k8s/deployment.yaml'"
+                echo "YAML local actualizado con la imagen: ${env.NEW_VERSION}"
             }
         }
 
-        stage('Deploy (Simulation)') {
+        stage('Deploy to K8s') {
+            agent { label 'vbogdtlmosp10' }
             steps {
-                sh """
-                sudo su - <<'EOF'
-                cd ${WORKSPACE}
-                echo 'La imagen en k8s/deployment.yaml ha sido actualizada.'
-                EOF
-                """
+                echo "Iniciando despliegue en el clúster usando el agente vbogdtlmosp10..."
+                sh "kubectl set image deployment/datacheck-web datacheck-web=datacheck-web:${env.NEW_VERSION} -n datacheck-web"
+                sh "kubectl rollout status deployment/datacheck-web -n datacheck-web"
             }
         }
     }
 
     post {
         always {
-            echo 'Limpiando archivos temporales...'
+            echo 'Finalizando ejecución del pipeline...'
         }
         success {
-            echo "✅ El despliegue de ${env.NEW_VERSION} fue exitoso!"
+            echo "✅ El despliegue de ${env.NEW_VERSION} fue exitoso en el clúster!"
         }
         failure {
             echo '❌ Hubo un error en el pipeline. Revisa los logs.'
