@@ -3,7 +3,7 @@ from utils.auth_utils import authenticate, verify_mfa_token, generate_mfa_secret
 from utils.decorators import login_required, role_required
 import requests
 import logging
-from utils.config import RECAPTCHA_SECRET_KEY, SECRET_KEY, get_db_connection
+from utils.config import RECAPTCHA_SECRET_KEY, RECAPTCHA_SITE_KEY, SECRET_KEY, get_db_connection
 
 import os
 
