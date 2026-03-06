@@ -5,6 +5,10 @@ pipeline {
         BASE_VERSION = 11
     }
 
+    triggers {
+        githubPush()
+    }
+
     stages {
         stage('Checkout') {
             agent { label 'vbogdtlmosp11' }
