@@ -1439,3 +1439,35 @@ body {
         transform: scale(1);
     }
 }
+/*  Version Badge  */
+.version-badge-container {
+    padding: 10px 12px;
+    background: var(--bg-secondary);
+    border-top: 1px solid var(--border-subtle);
+    display: flex;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.version-badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 3px 12px;
+    background: rgba(99, 102, 241, 0.08);
+    border: 1px solid rgba(99, 102, 241, 0.15);
+    border-radius: 100px;
+    color: var(--text-muted);
+    font-size: 10px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    pointer-events: none;
+    transition: all var(--transition);
+}
+
+.sidebar:hover .version-badge {
+    background: rgba(99, 102, 241, 0.12);
+    border-color: rgba(99, 102, 241, 0.4);
+    color: var(--accent-light);
+    box-shadow: 0 0 15px rgba(99, 102, 241, 0.1);
+}
