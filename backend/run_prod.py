@@ -11,6 +11,9 @@ if __name__ == '__main__':
     print("Servidor: Waitress (WSGI)")
     logging.info(f"Servidor Waitress iniciado en puerto {port}")
     
+    base_url = os.environ.get('APP_BASE_URL', '')
+    logging.info(f"APP_BASE_URL detectado: '{base_url}'")
+    
     # Habilitar logs detallados de Waitress
     logger = logging.getLogger('waitress')
     logger.setLevel(logging.DEBUG)

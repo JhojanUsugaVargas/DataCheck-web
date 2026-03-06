@@ -42,6 +42,11 @@ spec:
                   key: GEMINI_API_KEY
             - name: APP_BASE_URL
               value: "/app/datacheck"
+            - name: PORT
+              valueFrom:
+                configMapKeyRef:
+                  name: datacheck-config
+                  key: PORT
             - name: RECAPTCHA_ENABLED
               value: "false"
             - name: ENCRYPTED_AI_CONN_STR
