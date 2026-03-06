@@ -18,13 +18,7 @@ pipeline {
 
         stage('Validate Tools') {
             steps {
-                // Ejecutar nerdctl como root usando here-document
-                sh """
-                sudo su - <<'EOF'
-                cd ${WORKSPACE}
-                /usr/local/bin/nerdctl --version
-                EOF
-                """
+                sh "sudo /bin/bash -c 'cd ${WORKSPACE} && /usr/local/bin/nerdctl --version'"
             }
         }
 
@@ -48,24 +42,13 @@ pipeline {
 
         stage('Patch Deployment') {
             steps {
-                // Actualizar deployment.yaml con la nueva imagen
-                sh """
-                sudo su - <<'EOF'
-                cd ${WORKSPACE}
-                sed -i 's|image: datacheck-web:v.*|image: datacheck-web:${env.NEW_VERSION}|g' k8s/deployment.yaml
-                EOF
-                """
+                sh "sudo /bin/bash -c 'cd ${WORKSPACE} && sed -i \"s|image: datacheck-web:v.*|image: datacheck-web:${env.NEW_VERSION}|g\" k8s/deployment.yaml'"
             }
         }
 
         stage('Deploy (Simulation)') {
             steps {
-                sh """
-                sudo su - <<'EOF'
-                cd ${WORKSPACE}
-                echo 'La imagen en k8s/deployment.yaml ha sido actualizada.'
-                EOF
-                """
+                sh "sudo /bin/bash -c 'echo \"La imagen en k8s/deployment.yaml ha sido actualizada.\"' "
             }
         }
     }
