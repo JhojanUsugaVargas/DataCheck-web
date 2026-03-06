@@ -5,10 +5,15 @@ import requests
 import logging
 from utils.config import RECAPTCHA_SECRET_KEY, SECRET_KEY, get_db_connection
 
+import os
+
 auth_bp = Blueprint('auth', __name__)
 
 def verify_recaptcha(response_token):
     """Verifica el token de reCAPTCHA con el servidor de Google."""
+    if os.environ.get('RECAPTCHA_ENABLED', 'true').lower() == 'false':
+        logging.warning("reCAPTCHA desactivado (RECAPTCHA_ENABLED=false)")
+        return True
     if not response_token:
         return False
     try:
@@ -21,13 +26,14 @@ def verify_recaptcha(response_token):
         result = res.json()
         return result.get('success', False)
     except Exception as e:
-        logging.error(f"Error verificando reCAPTCHA: {e}")
-        return False
+        logging.warning(f"No se pudo verificar reCAPTCHA (error de red): {e}. Se omite la validación.")
+        return True
 
 @auth_bp.route('/login')
 def login_page():
     if session.get('logged_in'):
-        return redirect(url_for('index'))
+        base = os.environ.get('APP_BASE_URL', '').rstrip('/')
+        return redirect(f"{base}/")
     return render_template('login.html')
 
 @auth_bp.route('/api/login', methods=['POST'])

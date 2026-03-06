@@ -354,6 +354,7 @@
     </div>
 
     <script>
+        window.API_BASE = "{{ APP_BASE_URL }}";
         async function handleLogin(e) {
             e.preventDefault();
 
@@ -381,7 +382,7 @@
                 const token = document.getElementById('mfaToken').value.trim();
                 const recaptcha_token = grecaptcha.getResponse();
 
-                const res = await fetch('/api/login', {
+                const res = await fetch(window.API_BASE + '/api/login', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ username, password, token, recaptcha_token })
@@ -399,7 +400,7 @@
                         progBar.style.width = '100%';
                         statusText.textContent = 'Acceso Concedido ✅';
                     }
-                    setTimeout(() => window.location.href = '/', 500);
+                    setTimeout(() => window.location.href = '{{ APP_BASE_URL }}/', 500);
                 } else if (data.requires_mfa) {
                     if (topOverlay) topOverlay.classList.add('hidden');
                     // Show MFA field

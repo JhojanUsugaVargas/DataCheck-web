@@ -11,5 +11,9 @@ if __name__ == '__main__':
     print("Servidor: Waitress (WSGI)")
     logging.info(f"Servidor Waitress iniciado en puerto {port}")
     
+    # Habilitar logs detallados de Waitress
+    logger = logging.getLogger('waitress')
+    logger.setLevel(logging.DEBUG)
+    
     # Servir la aplicación Flask con Waitress
     serve(app, host='0.0.0.0', port=port, threads=4)

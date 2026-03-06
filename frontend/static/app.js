@@ -65,8 +65,8 @@ function confirmLogout() {
 }
 
 async function executeLogout() {
-    await fetch('/api/logout', { method: 'POST' });
-    window.location.href = '/login';
+    await fetch(window.API_BASE + '/api/logout', { method: 'POST' });
+    window.location.href = window.API_BASE + '/login';
 }
 
 // ── Send Action (sidebar buttons) ──
@@ -119,14 +119,14 @@ async function callAPI(action, message) {
         if (action) body.action = action;
         if (message) body.message = message;
 
-        const res = await fetch('/api/chat', {
+        const res = await fetch(window.API_BASE + '/api/chat', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(body)
         });
 
         if (res.status === 401) {
-            window.location.href = '/login';
+            window.location.href = window.API_BASE + '/login';
             return;
         }
 
@@ -409,7 +409,7 @@ async function updateProfile(e) {
 
     try {
         // 1. Update basic info
-        const res = await fetch('/api/profile/update', {
+        const res = await fetch(window.API_BASE + '/api/profile/update', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ full_name: fullName, password: password })
@@ -426,7 +426,7 @@ async function updateProfile(e) {
             const formData = new FormData();
             formData.append('photo', photoFile);
 
-            const photoRes = await fetch('/api/profile/photo', {
+            const photoRes = await fetch(window.API_BASE + '/api/profile/photo', {
                 method: 'POST',
                 body: formData
             });
@@ -454,7 +454,7 @@ async function openAdminModal() {
 
 async function loadUsers() {
     try {
-        const res = await fetch('/api/admin/users');
+        const res = await fetch(window.API_BASE + '/api/admin/users');
         const users = await res.json();
         const tbody = document.getElementById('usersTableBody');
         tbody.innerHTML = '';
@@ -494,7 +494,7 @@ async function resetPassword(username) {
     if (!newPassword) return;
 
     try {
-        const res = await fetch('/api/admin/users/reset_password', {
+        const res = await fetch(window.API_BASE + '/api/admin/users/reset_password', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ username: username, password: newPassword })
@@ -522,7 +522,7 @@ async function addUser(e) {
 
     btn.disabled = true;
     try {
-        const res = await fetch('/api/admin/users/add', {
+        const res = await fetch(window.API_BASE + '/api/admin/users/add', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(data)
@@ -545,7 +545,7 @@ async function addUser(e) {
 // ── MFA Setup Logic ──
 async function setupMFA() {
     try {
-        const res = await fetch('/api/mfa/setup');
+        const res = await fetch(window.API_BASE + '/api/mfa/setup');
         const data = await res.json();
 
         if (data.success) {
@@ -568,7 +568,7 @@ async function activateMFA() {
     }
 
     try {
-        const res = await fetch('/api/mfa/activate', {
+        const res = await fetch(window.API_BASE + '/api/mfa/activate', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ token: token })
@@ -595,7 +595,7 @@ function resetInactivityTimer() {
     clearTimeout(inactivityTimer);
     inactivityTimer = setTimeout(async () => {
         // Perform silent logout
-        await fetch('/api/logout', { method: 'POST' });
+        await fetch(window.API_BASE + '/api/logout', { method: 'POST' });
         // Show timeout modal
         document.getElementById('timeoutModal').style.display = 'flex';
     }, INACTIVITY_TIMEOUT);
@@ -652,7 +652,7 @@ async function changeInstance() {
     if (!instanceId) return;
 
     try {
-        const res = await fetch('/api/instances/select', {
+        const res = await fetch(window.API_BASE + '/api/instances/select', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ instance_id: parseInt(instanceId) })
@@ -690,7 +690,7 @@ async function addContract(e) {
     const name = document.getElementById('newContractName').value;
 
     try {
-        const res = await fetch('/api/contracts/add', {
+        const res = await fetch(window.API_BASE + '/api/contracts/add', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ name })
@@ -714,7 +714,7 @@ async function addInstance(e) {
     const conn_str = document.getElementById('newInstanceConn').value;
 
     try {
-        const res = await fetch('/api/instances/add', {
+        const res = await fetch(window.API_BASE + '/api/instances/add', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ contract_id, name, conn_str })
@@ -739,7 +739,7 @@ async function renameUser(username, currentName) {
     if (!newName || newName === currentName) return;
 
     try {
-        const res = await fetch('/api/admin/users/rename', {
+        const res = await fetch(window.API_BASE + '/api/admin/users/rename', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ username: username, new_name: newName })
@@ -760,7 +760,7 @@ async function toggleUserStatus(username) {
     if (!confirm(`¿Seguro que deseas cambiar el estado del usuario ${username}?`)) return;
 
     try {
-        const res = await fetch('/api/admin/users/toggle_status', {
+        const res = await fetch(window.API_BASE + '/api/admin/users/toggle_status', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ username: username })
@@ -780,7 +780,7 @@ async function deleteUser(username) {
     if (!confirm(`⚠️ ATENCIÓN: ¿Estás ABSOLUTAMENTE SEGURO de eliminar al usuario ${username}? Esta acción no se puede deshacer.`)) return;
 
     try {
-        const res = await fetch('/api/admin/users/delete', {
+        const res = await fetch(window.API_BASE + '/api/admin/users/delete', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ username: username })

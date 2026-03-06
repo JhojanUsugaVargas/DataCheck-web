@@ -9,8 +9,9 @@
     <link
         href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap"
         rel="stylesheet">
-    <link rel="stylesheet" href="/static/style.css">
+    <link rel="stylesheet" href="{{ APP_BASE_URL }}/static/style.css">
     <script>
+        window.API_BASE = "{{ APP_BASE_URL }}";
         window.currentContractId = "{{ current_contract_id }}";
         window.currentInstanceId = "{{ current_instance_id }}";
     </script>
@@ -169,7 +170,8 @@
                         <span class="user-role-header">{{ role }}</span>
                     </div>
                     <div class="user-avatar-header">
-                        <img src="/api/profile/photo/{{ username }}" alt="" onerror="this.style.display='none';">
+                        <img src="{{ APP_BASE_URL }}/api/profile/photo/{{ username }}" alt=""
+                            onerror="this.style.display='none';">
                         <div class="avatar-fallback-header">{{ full_name[0]|upper }}</div>
                     </div>
                 </div>
@@ -219,8 +221,8 @@
                     <label>Foto de Perfil</label>
                     <div style="display: flex; align-items: center; gap: 15px;">
                         <div class="user-avatar" style="width: 50px; height: 50px;">
-                            <img id="modalAvatarPreview" src="/api/profile/photo/{{ username }}" alt=""
-                                onerror="this.style.display='none';">
+                            <img id="modalAvatarPreview" src="{{ APP_BASE_URL }}/api/profile/photo/{{ username }}"
+                                alt="" onerror="this.style.display='none';">
                             <div class="avatar-fallback">{{ full_name[0]|upper }}</div>
                         </div>
                         <input type="file" id="profilePhoto" class="form-input" accept="image/*"
@@ -353,7 +355,7 @@
             </div>
             <p style="color: var(--text-secondary); margin-bottom: 24px;">Tu sesión ha cerrado automáticamente por
                 inactividad para proteger tu seguridad.</p>
-            <button class="save-btn" onclick="window.location.href='/login'">Volver al Login</button>
+            <button class="save-btn" onclick="window.location.href=window.API_BASE + '/login'">Volver al Login</button>
         </div>
     </div>
 
@@ -404,7 +406,7 @@
         </div>
     </div>
 
-    <script src="/static/app.js"></script>
+    <script src="{{ APP_BASE_URL }}/static/app.js"></script>
 </body>
 
 </html>
