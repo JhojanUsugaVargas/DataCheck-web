@@ -15,14 +15,25 @@ def action_soporte(mensaje):
     try:
         cursor = conn.cursor()
         username = session.get('username', 'web_user')
+        prioridad = 'Media'
+        
         cursor.execute("""
             INSERT INTO tickets 
-            (telegram_id, mensaje, fecha, prioridad, categoria, estado)
+            (user_id, mensaje, fecha, prioridad, categoria, estado)
             VALUES (?, ?, ?, ?, ?, ?)
-        """, (username, mensaje, datetime.now(), 'Media', 'General', 'Pendiente'))
+        """, (username, mensaje, datetime.now(), prioridad, 'General', 'Pendiente'))
         conn.commit()
         conn.close()
-        return {'type': 'success', 'message': '✅ Tu solicitud de soporte ha sido registrada y será atendida pronto.'}
+
+        # Resumen para el usuario
+        resumen = mensaje[:100] + ('...' if len(mensaje) > 100 else '')
+        msg = (
+            f"✅ **Solicitud de soporte registrada**\n\n"
+            f"**Resumen:** {resumen}\n"
+            f"**Prioridad:** {prioridad}\n\n"
+            "Será atendida por nuestro equipo pronto."
+        )
+        return {'type': 'success', 'message': msg}
     except Exception as e:
         if conn: conn.close()
         logging.error(f"Error al registrar solicitud: {e}")
