@@ -18,7 +18,7 @@ pipeline {
 
         stage('Validate Tools') {
             steps {
-                // Ejecutar nerdctl como root en el workspace correcto
+                // Ejecutar nerdctl como root usando here-document
                 sh """
                 sudo su - <<'EOF'
                 cd ${WORKSPACE}
@@ -60,7 +60,6 @@ pipeline {
 
         stage('Deploy (Simulation)') {
             steps {
-                // Solo una simulación de despliegue
                 sh """
                 sudo su - <<'EOF'
                 cd ${WORKSPACE}
