@@ -2,7 +2,7 @@ pipeline {
     agent none
 
     environment {
-        BASE_VERSION = 11
+        BASE_VERSION = 00
     }
 
     triggers {
