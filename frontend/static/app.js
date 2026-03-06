@@ -761,7 +761,7 @@ async function loadInstances() {
     instanceSelector.innerHTML = '<option value="">Cargando...</option>';
 
     try {
-        const res = await fetch(`/api/instances?contract_id=${contractId}`);
+        const res = await fetch(window.API_BASE + `/api/instances?contract_id=${contractId}`);
         const instances = await res.json();
 
         instanceSelector.innerHTML = '';
