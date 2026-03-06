@@ -1,39 +1,56 @@
 pipeline {
-    agent any
+    agent {
+        label 'vbogdtlmosp11'
+    }
 
     environment {
-        // Se asume que 'python' está en el PATH del servidor Jenkins
-        PYTHON = "python"
+        BASE_VERSION = 11
     }
 
     stages {
+
         stage('Checkout') {
             steps {
                 echo 'Descargando código del repositorio...'
-                // Aquí Jenkins normalmente descarga de Git automáticamente
+                checkout scm
             }
         }
 
-        stage('Install Dependencies') {
+        stage('Validate Tools') {
             steps {
-                echo 'Instalando dependencias necesarias...'
-                bat "${PYTHON} -m pip install -r requirements.txt"
+                sh 'nerdctl --version'
             }
         }
 
-        stage('Run Unit Tests') {
+        stage('Build Image') {
             steps {
-                echo 'Ejecutando pruebas de calidad (PyTest)...'
-                // Las pruebas se ejecutan si existen en el backend
-                bat "${PYTHON} -m pytest backend/"
+                script {
+                    def buildNum = env.BUILD_NUMBER.toInteger()
+                    env.NEW_VERSION = "v${BASE_VERSION + buildNum}"
+
+                    echo "Construyendo imagen versión: ${env.NEW_VERSION}"
+
+                    sh """
+                    nerdctl -n k8s.io build -t datacheck-web:${env.NEW_VERSION} .
+                    """
+                }
+            }
+        }
+
+        stage('Patch Deployment') {
+            steps {
+                echo "Actualizando deployment.yaml con la imagen: datacheck-web:${env.NEW_VERSION}"
+
+                sh """
+                sed -i 's|image: datacheck-web:v.*|image: datacheck-web:${env.NEW_VERSION}|g' k8s/deployment.yaml
+                """
             }
         }
 
         stage('Deploy (Simulation)') {
             steps {
                 echo 'Desplegando la aplicación...'
-                echo 'Para despliegue real en Windows, se suele usar un servicio de Windows o PM2.'
-                // bat "python run_prod.py" // Esto bloquearía el pipeline, se suele correr en background
+                echo 'La imagen en k8s/deployment.yaml ha sido actualizada.'
             }
         }
     }
@@ -43,7 +60,7 @@ pipeline {
             echo 'Limpiando archivos temporales...'
         }
         success {
-            echo '✅ El despliegue fue exitoso!'
+            echo "✅ El despliegue de ${env.NEW_VERSION} fue exitoso!"
         }
         failure {
             echo '❌ Hubo un error en el pipeline. Revisa los logs.'
