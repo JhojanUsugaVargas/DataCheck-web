@@ -159,6 +159,10 @@ function renderResponse(data) {
             renderMetrics(data.title, data.data);
             break;
 
+        case 'instance_monitor':
+            renderInstanceMonitor(data.title, data.data);
+            break;
+
         case 'ai':
             addBotMessage(data.message, null, data.source);
             break;
@@ -277,7 +281,7 @@ function renderTable(title, data) {
     scrollToBottom();
 }
 
-// ── Render Metrics ──
+// ── Render Metrics (legacy) ──
 function renderMetrics(title, data) {
     const container = document.getElementById('chatMessages');
     clearWelcome();
@@ -322,6 +326,144 @@ function renderMetrics(title, data) {
             <div class="metric-card">
                 <div class="metric-value">${data.mem_total_gb}</div>
                 <div class="metric-label">RAM Total (GB)</div>
+            </div>
+        </div>
+    `;
+
+    msgEl.appendChild(avatar);
+    msgEl.appendChild(content);
+    container.appendChild(msgEl);
+    scrollToBottom();
+}
+
+// ── Render Instance Monitor (enhanced dashboard) ──
+function renderInstanceMonitor(title, data) {
+    const container = document.getElementById('chatMessages');
+    clearWelcome();
+
+    const msgEl = document.createElement('div');
+    msgEl.className = 'message bot';
+
+    const avatar = document.createElement('div');
+    avatar.className = 'msg-avatar';
+    avatar.textContent = '🤖';
+
+    const content = document.createElement('div');
+    content.className = 'msg-content monitor-dashboard';
+
+    // Color helpers
+    const cpuColor = data.sql_cpu_percent > 80 ? '#ef4444' : data.sql_cpu_percent > 50 ? '#f59e0b' : '#10b981';
+    const memColor = data.sql_mem_usage_percent > 80 ? '#ef4444' : data.sql_mem_usage_percent > 50 ? '#f59e0b' : '#10b981';
+    const cpuOtherColor = '#8b5cf6';
+    const cpuIdleColor = 'rgba(99, 102, 241, 0.15)';
+
+    // Donut SVG for CPU
+    const sqlAngle = (data.sql_cpu_percent / 100) * 360;
+    const otherAngle = (data.cpu_other / 100) * 360;
+    const sqlDash = (data.sql_cpu_percent / 100) * 251.2;
+    const otherDash = (data.cpu_other / 100) * 251.2;
+    const sqlOffset = 0;
+    const otherOffset = -sqlDash;
+
+    content.innerHTML = `
+        <div class="monitor-header">
+            <span class="monitor-title">${title}</span>
+            <span class="monitor-timestamp">${data.fecha}</span>
+        </div>
+
+        <div class="monitor-grid">
+            <!-- CPU Section -->
+            <div class="monitor-section cpu-section">
+                <div class="section-label">🖥️ CPU</div>
+                <div class="cpu-donut-container">
+                    <svg class="cpu-donut" viewBox="0 0 100 100">
+                        <!-- Background circle -->
+                        <circle cx="50" cy="50" r="40" fill="none" stroke="${cpuIdleColor}" stroke-width="8"/>
+                        <!-- Other processes -->
+                        <circle cx="50" cy="50" r="40" fill="none" stroke="${cpuOtherColor}" stroke-width="8"
+                            stroke-dasharray="${otherDash} ${251.2 - otherDash}"
+                            stroke-dashoffset="${otherOffset}"
+                            transform="rotate(-90 50 50)"
+                            class="donut-segment"/>
+                        <!-- SQL Server -->
+                        <circle cx="50" cy="50" r="40" fill="none" stroke="${cpuColor}" stroke-width="8"
+                            stroke-dasharray="${sqlDash} ${251.2 - sqlDash}"
+                            stroke-dashoffset="0"
+                            transform="rotate(-90 50 50)"
+                            class="donut-segment"/>
+                        <text x="50" y="46" text-anchor="middle" class="donut-percent" fill="${cpuColor}">${data.sql_cpu_percent}%</text>
+                        <text x="50" y="58" text-anchor="middle" class="donut-label" fill="currentColor">SQL</text>
+                    </svg>
+                </div>
+                <div class="cpu-legend">
+                    <div class="legend-item">
+                        <span class="legend-dot" style="background:${cpuColor}"></span>
+                        <span class="legend-text">SQL Server: ${data.sql_cpu_percent}%</span>
+                    </div>
+                    <div class="legend-item">
+                        <span class="legend-dot" style="background:${cpuOtherColor}"></span>
+                        <span class="legend-text">Otros: ${data.cpu_other}%</span>
+                    </div>
+                    <div class="legend-item">
+                        <span class="legend-dot" style="background:rgba(99,102,241,0.3)"></span>
+                        <span class="legend-text">Libre: ${data.cpu_idle}%</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Memory Section -->
+            <div class="monitor-section mem-section">
+                <div class="section-label">🧠 Memoria SQL</div>
+                <div class="mem-bar-container">
+                    <div class="mem-bar-bg">
+                        <div class="mem-bar-fill" style="width:${data.sql_mem_usage_percent}%; background:${memColor}"></div>
+                    </div>
+                    <div class="mem-bar-label">
+                        <span style="color:${memColor}; font-weight:700; font-size:20px;">${data.sql_mem_usage_percent}%</span>
+                    </div>
+                </div>
+                <div class="mem-details">
+                    <div class="mem-detail-item">
+                        <span class="mem-detail-value">${data.sql_mem_used_mb.toLocaleString()}</span>
+                        <span class="mem-detail-label">Usada (MB)</span>
+                    </div>
+                    <div class="mem-detail-item">
+                        <span class="mem-detail-value">${data.sql_mem_free_mb.toLocaleString()}</span>
+                        <span class="mem-detail-label">Libre (MB)</span>
+                    </div>
+                    <div class="mem-detail-item">
+                        <span class="mem-detail-value">${data.sql_max_mem_mb.toLocaleString()}</span>
+                        <span class="mem-detail-label">Max Config (MB)</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Activity Section -->
+            <div class="monitor-section activity-section">
+                <div class="section-label">📊 Actividad</div>
+                <div class="activity-cards">
+                    <div class="activity-card">
+                        <div class="activity-icon" style="background:rgba(16,185,129,0.12); color:#10b981">▶</div>
+                        <div class="activity-info">
+                            <div class="activity-value">${data.sessions_running}</div>
+                            <div class="activity-label">Ejecutando</div>
+                        </div>
+                    </div>
+                    <div class="activity-card">
+                        <div class="activity-icon" style="background:rgba(99,102,241,0.12); color:#818cf8">👤</div>
+                        <div class="activity-info">
+                            <div class="activity-value">${data.sessions_user}</div>
+                            <div class="activity-label">Sesiones Usuario</div>
+                        </div>
+                    </div>
+                    <div class="activity-card">
+                        <div class="activity-icon" style="background:rgba(245,158,11,0.12); color:#f59e0b">⚡</div>
+                        <div class="activity-info">
+                            <div class="activity-value">${data.requests_active}</div>
+                            <div class="activity-label">Requests Activas</div>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
     `;
@@ -635,15 +777,14 @@ async function loadInstances() {
             // Pre-seleccionar si corresponde
             if (window.currentInstanceId) {
                 instanceSelector.value = window.currentInstanceId;
-                window.currentInstanceId = null; // Limpiar para que no interfiera después
-            } else {
-                window.firstLoad = false; // Ya no es carga inicial si no hay ID predefinido
+                window.currentInstanceId = null;
             }
-            // trigger first selection if desired, or let user pick
-            changeInstance();
+            // No forzar changeInstance() automáticamente en carga inicial
+            // Solo cambiar si el usuario interactúa (via onchange en el select)
         }
     } catch (err) {
         console.error('Error loading instances:', err);
+        instanceSelector.innerHTML = '<option value="">Error al cargar</option>';
     }
 }
 
@@ -659,15 +800,17 @@ async function changeInstance() {
         });
         const data = await res.json();
 
-        if (data.success && !window.firstLoad) {
+        if (data.success) {
+            // Recargar la página para reflejar la nueva instancia
             location.reload();
+        } else {
+            addBotMessage(`⚠️ ${data.message || 'Error al cambiar instancia'}`, 'error');
         }
-        window.firstLoad = false;
     } catch (err) {
         console.error('Error changing instance:', err);
+        addBotMessage('❌ Error de conexión al cambiar instancia.', 'error');
     }
 }
-window.firstLoad = true;
 
 // ── Admin: Contract & Instance Management ──
 function openAddContractModal() {

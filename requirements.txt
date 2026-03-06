@@ -1,4 +1,5 @@
 flask>=3.0
+werkzeug
 pyodbc
 psutil
 cryptography
@@ -8,5 +9,6 @@ tabulate
 waitress
 pytest
 pyotp
+qrcode[pil]
 requests
 python-dotenv

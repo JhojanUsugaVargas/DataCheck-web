@@ -2,6 +2,9 @@ from flask import Blueprint, jsonify, session, request
 import logging
 from utils.config import get_db_connection
 from utils.decorators import login_required, role_required
+from services.dba_queries.disk_space import query_disk_space, query_disk_space_summary
+from services.dba_queries.database_sizes import query_database_sizes
+from services.dba_queries.instance_monitor import query_instance_monitor
 import re
 
 dba_bp = Blueprint('dba', __name__)
@@ -75,78 +78,27 @@ def action_bloqueos():
 @dba_bp.route('/api/cpu')
 @login_required
 def action_cpu():
-    """Obtiene información de CPU y memoria directamente desde SQL Server."""
+    """Monitor rápido de instancia: CPU, Memoria SQL, Sesiones y Requests."""
     conn = get_active_conn()
     if not conn:
         return jsonify({'type': 'error', 'message': '❌ Error al conectar a la base de datos para métricas.'})
 
     try:
         cursor = conn.cursor()
-        
-        # 1. Obtener uso de CPU (Promedio del último minuto desde Ring Buffers)
-        cpu_query = """
-            SELECT TOP 1 
-                [SQLProcessUtilization] AS [CPU]
-            FROM (
-                SELECT 
-                    record.value('(./Record/@id)[1]', 'int') AS record_id,
-                    record.value('(./Record/SchedulerMonitorEvent/SystemHealth/ProcessUtilization)[1]', 'int') AS [SQLProcessUtilization]
-                FROM (
-                    SELECT CAST(record AS xml) AS [record] 
-                    FROM sys.dm_os_ring_buffers 
-                    WHERE ring_buffer_type = N'RING_BUFFER_SCHEDULER_MONITOR'
-                    AND record LIKE '%<SchedulerMonitorEvent>%'
-                ) AS x
-            ) AS y 
-            ORDER BY record_id DESC
-        """
-        cursor.execute(cpu_query)
-        cpu_row = cursor.fetchone()
-        cpu_percent = cpu_row[0] if cpu_row else 0
-
-        # 2. Obtener uso de Memoria
-        mem_query = """
-            SELECT 
-                total_physical_memory_kb / 1024 / 1024 AS total_gb,
-                available_physical_memory_kb / 1024 / 1024 AS available_gb,
-                system_memory_state_desc
-            FROM sys.dm_os_sys_memory
-        """
-        cursor.execute(mem_query)
-        mem_row = cursor.fetchone()
-        
-        if mem_row:
-            total_gb = round(float(mem_row[0]), 1)
-            avail_gb = round(float(mem_row[1]), 1)
-            used_gb = round(total_gb - avail_gb, 1)
-            mem_percent = round((used_gb / total_gb) * 100, 1) if total_gb > 0 else 0
-        else:
-            total_gb, used_gb, mem_percent = 0, 0, 0
-
-        # 3. Obtener núcleos e hilos (sys.dm_os_sys_info)
-        info_query = "SELECT cpu_count, hyperthread_ratio FROM sys.dm_os_sys_info"
-        cursor.execute(info_query)
-        info_row = cursor.fetchone()
-        cpu_cores = info_row[0] / info_row[1] if info_row else 'N/A'
-        cpu_threads = info_row[0] if info_row else 'N/A'
-
+        data = query_instance_monitor(cursor)
         conn.close()
 
+        if not data:
+            return jsonify({'type': 'error', 'message': '❌ No se pudieron obtener métricas de la instancia.'})
+
         return jsonify({
-            'type': 'metrics',
-            'title': '⚙️ Recursos de la Instancia SQL',
-            'data': {
-                'cpu_percent': cpu_percent,
-                'cpu_cores': cpu_cores,
-                'cpu_threads': cpu_threads,
-                'mem_percent': mem_percent,
-                'mem_total_gb': total_gb,
-                'mem_used_gb': used_gb
-            }
+            'type': 'instance_monitor',
+            'title': '⚙️ Monitor Rápido de Instancia',
+            'data': data
         })
     except Exception as e:
         if conn: conn.close()
-        logging.error(f"Error en métricas remotas: {e}")
+        logging.error(f"Error en monitor de instancia: {e}")
         return jsonify({'type': 'error', 'message': f'❌ No se pudieron obtener métricas: {str(e)}'})
 
 @dba_bp.route('/api/whoisactive')
@@ -214,23 +166,12 @@ def action_discos():
 
     try:
         cursor = conn.cursor()
-        cursor.execute("EXEC dbo.sp_DiskSpace")
-        rows = cursor.fetchall()
-        columns = [desc[0] for desc in cursor.description]
+        discos = query_disk_space(cursor)
         conn.close()
 
-        if not rows:
+        if not discos:
             return jsonify({'type': 'success', 'message': 'No se encontró información de espacio en disco.'})
 
-        discos = []
-        for row in rows:
-            disco = {}
-            for i, col in enumerate(columns):
-                val = row[i]
-                if isinstance(val, (float, int)):
-                    val = round(float(val), 2)
-                disco[col] = str(val)
-            discos.append(disco)
         return jsonify({'type': 'table', 'title': '💾 Espacio en Discos', 'data': discos})
     except Exception as e:
         if conn: conn.close()
@@ -246,23 +187,12 @@ def action_datalog():
 
     try:
         cursor = conn.cursor()
-        cursor.execute("EXEC sp_GetDatabaseSizes")
-        rows = cursor.fetchall()
-        columns = [desc[0] for desc in cursor.description]
+        datos = query_database_sizes(cursor)
         conn.close()
 
-        if not rows:
+        if not datos:
             return jsonify({'type': 'success', 'message': 'No se encontró información.'})
 
-        datos = []
-        for row in rows:
-            item = {}
-            for i, col in enumerate(columns):
-                val = row[i]
-                if isinstance(val, (float, int)):
-                    val = round(float(val), 2)
-                item[col] = str(val)
-            datos.append(item)
         return jsonify({'type': 'table', 'title': '🕵️‍♂️ Data y Log', 'data': datos})
     except Exception as e:
         if conn: conn.close()
@@ -370,11 +300,10 @@ def action_performance():
         else:
             mem_info = "N/A"
 
-        # 4. Discos (vía sp_DiskSpace si existe)
+        # 4. Discos (usando DMVs estándar)
         disk_summary = ""
         try:
-            cursor.execute("EXEC dbo.sp_DiskSpace")
-            d_rows = cursor.fetchall()
+            d_rows = query_disk_space_summary(cursor)
             if d_rows:
                 disk_summary = "\n".join([f"  • {row[0]}: {row[2]} GB libres / {row[1]} GB total" for row in d_rows])
         except Exception:
