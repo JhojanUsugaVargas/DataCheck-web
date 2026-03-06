@@ -19,7 +19,7 @@ def action_soporte(mensaje):
         
         cursor.execute("""
             INSERT INTO tickets 
-            (user_id, mensaje, fecha, prioridad, categoria, estado)
+            (user_id, mensaje, fecha_solicitud, prioridad, categoria, estado)
             VALUES (?, ?, ?, ?, ?, ?)
         """, (username, mensaje, datetime.now(), prioridad, 'General', 'Pendiente'))
         conn.commit()
