@@ -20,7 +20,10 @@ pipeline {
             steps {
                 // Ejecutar nerdctl como root en el workspace correcto
                 sh """
-                sudo su -c "cd ${WORKSPACE} && /usr/local/bin/nerdctl --version"
+                sudo su - <<'EOF'
+                cd ${WORKSPACE}
+                /usr/local/bin/nerdctl --version
+                EOF
                 """
             }
         }
@@ -34,7 +37,10 @@ pipeline {
                     echo "Construyendo imagen versión: ${env.NEW_VERSION}"
 
                     sh """
-                    sudo su -c "cd ${WORKSPACE} && /usr/local/bin/nerdctl -n k8s.io build -t datacheck-web:${env.NEW_VERSION} ."
+                    sudo su - <<'EOF'
+                    cd ${WORKSPACE}
+                    /usr/local/bin/nerdctl -n k8s.io build -t datacheck-web:${env.NEW_VERSION} .
+                    EOF
                     """
                 }
             }
@@ -42,16 +48,24 @@ pipeline {
 
         stage('Patch Deployment') {
             steps {
+                // Actualizar deployment.yaml con la nueva imagen
                 sh """
-                sudo su -c "cd ${WORKSPACE} && sed -i 's|image: datacheck-web:v.*|image: datacheck-web:${env.NEW_VERSION}|g' k8s/deployment.yaml"
+                sudo su - <<'EOF'
+                cd ${WORKSPACE}
+                sed -i 's|image: datacheck-web:v.*|image: datacheck-web:${env.NEW_VERSION}|g' k8s/deployment.yaml
+                EOF
                 """
             }
         }
 
         stage('Deploy (Simulation)') {
             steps {
+                // Solo una simulación de despliegue
                 sh """
-                sudo su -c "cd ${WORKSPACE} && echo 'La imagen en k8s/deployment.yaml ha sido actualizada.'"
+                sudo su - <<'EOF'
+                cd ${WORKSPACE}
+                echo 'La imagen en k8s/deployment.yaml ha sido actualizada.'
+                EOF
                 """
             }
         }
