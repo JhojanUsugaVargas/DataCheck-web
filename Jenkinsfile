@@ -18,7 +18,10 @@ pipeline {
 
         stage('Validate Tools') {
             steps {
-                sh 'sudo /usr/local/bin/nerdctl --version'
+                // Ejecutar nerdctl dentro de un shell de root
+                sh '''
+                sudo su - -c "/usr/local/bin/nerdctl --version"
+                '''
             }
         }
 
@@ -31,7 +34,7 @@ pipeline {
                     echo "Construyendo imagen versión: ${env.NEW_VERSION}"
 
                     sh """
-                    sudo /usr/local/bin/nerdctl -n k8s.io build -t datacheck-web:${env.NEW_VERSION} .
+                    sudo su - -c "/usr/local/bin/nerdctl -n k8s.io build -t datacheck-web:${env.NEW_VERSION} ."
                     """
                 }
             }
@@ -39,18 +42,17 @@ pipeline {
 
         stage('Patch Deployment') {
             steps {
-                echo "Actualizando deployment.yaml con la imagen: datacheck-web:${env.NEW_VERSION}"
-
                 sh """
-                sed -i 's|image: datacheck-web:v.*|image: datacheck-web:${env.NEW_VERSION}|g' k8s/deployment.yaml
+                sudo su - -c "sed -i 's|image: datacheck-web:v.*|image: datacheck-web:${env.NEW_VERSION}|g' k8s/deployment.yaml"
                 """
             }
         }
 
         stage('Deploy (Simulation)') {
             steps {
-                echo 'Desplegando la aplicación...'
-                echo 'La imagen en k8s/deployment.yaml ha sido actualizada.'
+                sh '''
+                sudo su - -c "echo 'La imagen en k8s/deployment.yaml ha sido actualizada.'"
+                '''
             }
         }
     }
