@@ -18,7 +18,7 @@ pipeline {
 
         stage('Validate Tools') {
             steps {
-                sh 'nerdctl --version'
+                sh 'sudo nerdctl --version'
             }
         }
 
@@ -31,7 +31,7 @@ pipeline {
                     echo "Construyendo imagen versión: ${env.NEW_VERSION}"
 
                     sh """
-                    nerdctl -n k8s.io build -t datacheck-web:${env.NEW_VERSION} .
+                    sudo nerdctl -n k8s.io build -t datacheck-web:${env.NEW_VERSION} .
                     """
                 }
             }
