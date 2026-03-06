@@ -30,12 +30,7 @@ pipeline {
 
                     echo "Construyendo imagen versión: ${env.NEW_VERSION}"
 
-                    sh """
-                    sudo su - <<'EOF'
-                    cd ${WORKSPACE}
-                    /usr/local/bin/nerdctl -n k8s.io build -t datacheck-web:${env.NEW_VERSION} .
-                    EOF
-                    """
+                    sh "sudo /bin/bash -c 'cd ${WORKSPACE} && /usr/local/bin/nerdctl -n k8s.io build -t datacheck-web:${env.NEW_VERSION} .'"
                 }
             }
         }
