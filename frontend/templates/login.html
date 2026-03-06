@@ -7,7 +7,6 @@
     <title>DataCheck — Login</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    <script src="https://www.google.com/recaptcha/api.js" async defer></script>
     <style>
         * {
             margin: 0;
@@ -341,7 +340,7 @@
                 </div>
 
                 <!-- Google reCAPTCHA Widget -->
-                {% if site_key and config.get('RECAPTCHA_ENABLED', 'true').lower() != 'false' %}
+                {% if site_key and RECAPTCHA_ENABLED != 'false' %}
                 <div class="form-group" style="display: flex; justify-content: center; margin-top: 10px;">
                     <div class="g-recaptcha" data-sitekey="{{ site_key }}" data-theme="dark">
                     </div>

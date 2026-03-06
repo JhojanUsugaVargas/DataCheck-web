@@ -50,7 +50,7 @@ def login_page():
 def api_login():
     data = request.get_json()
     username = data.get('username', '').strip()
-    password = data.get('password', '').strip()
+    password = data.get('password', '')
     recaptcha_token = data.get('recaptcha_token', '')
 
     if not verify_recaptcha(recaptcha_token):
@@ -77,7 +77,7 @@ def api_login():
         session.permanent = True
         session['logged_in'] = True
         session['username'] = user_data['username']
-        session['role'] = user_data['role'].strip()
+        session['role'] = (user_data['role'] or 'Monitor').strip()
         session['full_name'] = user_data['full_name']
         session['user_id'] = user_data['user_id']
         return jsonify({'success': True, 'message': f'¡Bienvenido, {user_data["full_name"]}!'})

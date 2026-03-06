@@ -46,7 +46,8 @@ def log_request_info():
 def inject_global_vars():
     # Extraer la variable de entorno, si no existe o termina en slash, la limpia
     base_url = os.environ.get('APP_BASE_URL', '').rstrip('/')
-    return dict(APP_BASE_URL=base_url)
+    recaptcha_enabled = os.environ.get('RECAPTCHA_ENABLED', 'true').lower()
+    return dict(APP_BASE_URL=base_url, RECAPTCHA_ENABLED=recaptcha_enabled)
 
 # ============================================================
 #  MAIN ROUTES (General)
