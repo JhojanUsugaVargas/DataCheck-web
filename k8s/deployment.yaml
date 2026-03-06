@@ -44,6 +44,24 @@ spec:
               value: "/app/datacheck"
             - name: RECAPTCHA_ENABLED
               value: "false"
+            - name: ENCRYPTED_AI_CONN_STR
+              valueFrom:
+                secretKeyRef:
+                  name: datacheck-secrets
+                  key: ENCRYPTED_AI_CONN_STR
+                  optional: true
+            - name: RECAPTCHA_SITE_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: datacheck-secrets
+                  key: RECAPTCHA_SITE_KEY
+                  optional: true
+            - name: RECAPTCHA_SECRET_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: datacheck-secrets
+                  key: RECAPTCHA_SECRET_KEY
+                  optional: true
           resources:
             limits:
               cpu: 500m

@@ -341,10 +341,12 @@
                 </div>
 
                 <!-- Google reCAPTCHA Widget -->
+                {% if site_key %}
                 <div class="form-group" style="display: flex; justify-content: center; margin-top: 10px;">
-                    <div class="g-recaptcha" data-sitekey="6LfrMIAsAAAAAAAXkryvn4lD423OJJ87SeD7uB09" data-theme="dark">
+                    <div class="g-recaptcha" data-sitekey="{{ site_key }}" data-theme="dark">
                     </div>
                 </div>
+                {% endif %}
 
                 <button type="submit" class="login-btn" id="loginBtn">Iniciar Sesión</button>
             </form>
@@ -352,6 +354,10 @@
             <p class="footer-text">DataCheck Web © 2026</p>
         </div>
     </div>
+
+    {% if site_key %}
+    <script src="https://www.google.com/recaptcha/api.js" async defer></script>
+    {% endif %}
 
     <script>
         window.API_BASE = "{{ APP_BASE_URL }}";
@@ -380,7 +386,11 @@
 
             try {
                 const token = document.getElementById('mfaToken').value.trim();
-                const recaptcha_token = grecaptcha.getResponse();
+                // Get recaptcha token if widget exists
+                let recaptcha_token = '';
+                if (typeof grecaptcha !== 'undefined') {
+                    recaptcha_token = grecaptcha.getResponse();
+                }
 
                 const res = await fetch(window.API_BASE + '/api/login', {
                     method: 'POST',
@@ -420,8 +430,10 @@
                     btn.classList.remove('loading');
                     btn.textContent = 'Iniciar Sesión';
 
-                    // Reset reCAPTCHA on failure
-                    grecaptcha.reset();
+                    // Reset reCAPTCHA on failure if widget exists
+                    if (typeof grecaptcha !== 'undefined') {
+                        grecaptcha.reset();
+                    }
                 }
             } catch (err) {
                 const topOverlay = document.getElementById('loadingOverlay');

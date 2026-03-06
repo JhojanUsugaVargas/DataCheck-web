@@ -10,12 +10,21 @@ import os
 auth_bp = Blueprint('auth', __name__)
 
 def verify_recaptcha(response_token):
-    """Verifica el token de reCAPTCHA con el servidor de Google."""
+    """Verifica el token de reCAPTCHA con el servidor de Google.
+    Si RECAPTCHA_ENABLED es false o RECAPTCHA_SECRET_KEY no está configurado, se omite la validación."""
+    
+    # Soporte para desactivación explícita (del remoto)
     if os.environ.get('RECAPTCHA_ENABLED', 'true').lower() == 'false':
         logging.warning("reCAPTCHA desactivado (RECAPTCHA_ENABLED=false)")
         return True
+        
+    # Si no hay key configurada (de hoy)
+    if not RECAPTCHA_SECRET_KEY:
+        return True
+        
     if not response_token:
         return False
+        
     try:
         url = "https://www.google.com/recaptcha/api/siteverify"
         payload = {
@@ -27,14 +36,15 @@ def verify_recaptcha(response_token):
         return result.get('success', False)
     except Exception as e:
         logging.warning(f"No se pudo verificar reCAPTCHA (error de red): {e}. Se omite la validación.")
-        return True
+        return True  # Fail-open
 
 @auth_bp.route('/login')
 def login_page():
     if session.get('logged_in'):
+        # Combinar base url del remoto
         base = os.environ.get('APP_BASE_URL', '').rstrip('/')
         return redirect(f"{base}/")
-    return render_template('login.html')
+    return render_template('login.html', site_key=RECAPTCHA_SITE_KEY)
 
 @auth_bp.route('/api/login', methods=['POST'])
 def api_login():

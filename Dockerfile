@@ -36,5 +36,4 @@ COPY . .
 EXPOSE 5000
 
 # Comando para ejecutar la aplicación usando Waitress
-# Se ejecuta desde la raíz indicando la ruta al script de producción
 CMD ["python", "backend/run_prod.py"]
