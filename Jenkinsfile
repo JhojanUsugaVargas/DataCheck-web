@@ -18,7 +18,7 @@ pipeline {
 
         stage('Validate Tools') {
             steps {
-                sh "sudo -i bash -c 'cd ${WORKSPACE} && nerdctl --version'"
+                sh "sudo -i bash -c 'export PATH=/usr/local/bin:\$PATH; cd ${WORKSPACE} && nerdctl --version'"
             }
         }
 
@@ -37,13 +37,13 @@ pipeline {
 
         stage('Patch Deployment') {
             steps {
-                sh "sudo -i bash -c 'cd ${WORKSPACE} && sed -i \"s|image: datacheck-web:v.*|image: datacheck-web:${env.NEW_VERSION}|g\" k8s/deployment.yaml'"
+                sh "sudo -i bash -c 'export PATH=/usr/local/bin:\$PATH; cd ${WORKSPACE} && sed -i \"s|image: datacheck-web:v.*|image: datacheck-web:${env.NEW_VERSION}|g\" k8s/deployment.yaml'"
             }
         }
 
         stage('Deploy (Simulation)') {
             steps {
-                sh "sudo -i bash -c 'echo \"La imagen en k8s/deployment.yaml ha sido actualizada.\"' "
+                sh "sudo -i bash -c 'export PATH=/usr/local/bin:\$PATH; echo \"La imagen en k8s/deployment.yaml ha sido actualizada.\"' "
             }
         }
     }
