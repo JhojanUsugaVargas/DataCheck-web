@@ -83,7 +83,8 @@ def index():
                            contracts=contracts,
                            instances=available_instances,
                            current_contract_id=current_contract_id,
-                           current_instance_id=current_instance_id)
+                           current_instance_id=current_instance_id,
+                           mfa_enabled=session.get('mfa_enabled', False))
 
 @app.route('/api/instances')
 @login_required

@@ -707,12 +707,37 @@ async function setupMFA() {
     }
 }
 
+function validateMFAInput() {
+    const token = document.getElementById('mfaConfirmToken').value.trim();
+    const btn = document.getElementById('mfaActivateBtn');
+    if (token.length === 6 && /^\d+$/.test(token)) {
+        btn.disabled = false;
+        btn.style.opacity = '1';
+    } else {
+        btn.disabled = true;
+        btn.style.opacity = '0.5';
+    }
+}
+
+function cancelMFASetup() {
+    document.getElementById('mfaQRContainer').style.display = 'none';
+    const setupContainer = document.getElementById('mfaSetupContainer');
+    const enabledContainer = document.getElementById('mfaEnabledContainer');
+    if (setupContainer) setupContainer.style.display = 'block';
+    else if (enabledContainer) enabledContainer.style.display = 'block';
+}
+
 async function activateMFA() {
     const token = document.getElementById('mfaConfirmToken').value.trim();
-    if (!token) {
-        alert('Por favor ingresa el código de 6 dígitos');
+    const btn = document.getElementById('mfaActivateBtn');
+
+    if (!token || token.length !== 6) {
+        alert('Por favor ingresa un código válido de 6 dígitos');
         return;
     }
+
+    btn.disabled = true;
+    btn.textContent = 'Verificando...';
 
     try {
         const res = await fetch(window.API_BASE + '/api/mfa/activate', {
@@ -726,10 +751,14 @@ async function activateMFA() {
             alert('¡MFA activado correctamente!');
             location.reload();
         } else {
-            alert('Error: ' + (data.error || 'Código incorrecto'));
+            alert('Error de validación: ' + (data.error || 'El código ingresado es incorrecto o ha expirado.'));
+            btn.disabled = false;
+            btn.textContent = 'Verificar y Activar';
         }
     } catch (err) {
-        alert('Error de conexión');
+        alert('Error de conexión con el servidor móvil.');
+        btn.disabled = false;
+        btn.textContent = 'Verificar y Activar';
     }
 }
 
