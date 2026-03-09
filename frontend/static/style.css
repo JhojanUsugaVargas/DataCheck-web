@@ -33,9 +33,9 @@ body.light-mode {
     /* Slate 50 */
     --bg-secondary: #ffffff;
     --bg-card: rgba(255, 255, 255, 0.8);
-    --bg-input: #f1f5f9;
-    /* Slate 100 */
-    --border-subtle: rgba(148, 163, 226, 0.2);
+    --bg-input: #ffffff;
+    /* Pure white for inputs */
+    --border-subtle: rgba(0, 0, 0, 0.06);
     --border-focus: rgba(99, 102, 241, 0.4);
     --text-primary: #1e293b;
     /* Slate 800 */
@@ -238,6 +238,11 @@ body.light-mode .sidebar {
     color: var(--text-primary);
     cursor: pointer;
     transition: var(--transition);
+}
+
+body.light-mode .form-input-sm {
+    background: #ffffff;
+    border-color: rgba(0, 0, 0, 0.08);
 }
 
 .form-input-sm:focus {
@@ -1085,6 +1090,11 @@ body.light-mode .welcome-card {
     border-top: 1px solid var(--border-subtle);
 }
 
+body.light-mode .chat-input-area {
+    background: rgba(255, 255, 255, 0.8);
+    border-top: 1px solid rgba(0, 0, 0, 0.05);
+}
+
 .input-container {
     display: flex;
     align-items: center;
@@ -1094,6 +1104,12 @@ body.light-mode .welcome-card {
     border-radius: 14px;
     padding: 4px 4px 4px 18px;
     transition: all var(--transition);
+}
+
+body.light-mode .input-container {
+    background: #ffffff;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.03);
+    border-color: rgba(0, 0, 0, 0.08);
 }
 
 .input-container:focus-within {
@@ -1289,6 +1305,13 @@ body.light-mode .welcome-card {
     font-size: 14px;
     outline: none;
     cursor: pointer;
+}
+
+body.light-mode .form-input,
+body.light-mode .form-select {
+    background: #ffffff;
+    border-color: rgba(0, 0, 0, 0.08);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.02);
 }
 
 .save-btn {
