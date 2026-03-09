@@ -11,7 +11,9 @@ chat_bp = Blueprint('chat', __name__)
 def api_chat():
     """Procesa un mensaje del usuario y devuelve la respuesta apropiada."""
     data = request.get_json()
-    user_message = data.get('message', '').strip()
+    user_message = data.get('message', '')
+    if isinstance(user_message, str):
+        user_message = user_message.strip()
     action = data.get('action', '').strip()
 
     if not action:
