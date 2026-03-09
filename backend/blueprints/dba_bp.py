@@ -5,6 +5,7 @@ from utils.decorators import login_required, role_required
 from services.dba_queries.disk_space import query_disk_space, query_disk_space_summary
 from services.dba_queries.database_sizes import query_database_sizes
 from services.dba_queries.instance_monitor import query_instance_monitor
+from services.dba_queries.tempdb_monitor import query_tempdb_usage
 import re
 
 dba_bp = Blueprint('dba', __name__)
@@ -209,29 +210,16 @@ def action_tempdb():
 
     try:
         cursor = conn.cursor()
-        cursor.execute("""
-            SELECT name, physical_name, size * 8 / 1024 AS sizeMB
-            FROM sys.master_files
-            WHERE database_id = DB_ID('tempdb')
-        """)
-        rows = cursor.fetchall()
+        data = query_tempdb_usage(cursor)
         conn.close()
 
-        if not rows:
+        if not data:
             return jsonify({'type': 'success', 'message': 'No se encontró información de TempDB.'})
 
-        total_mb = sum(row[2] for row in rows)
-        archivos = []
-        for row in rows:
-            archivos.append({
-                'nombre': str(row[0]),
-                'ruta': str(row[1]),
-                'tamaño_mb': str(row[2])
-            })
         return jsonify({
-            'type': 'table',
-            'title': f'🧹 TempDB — Total: {total_mb} MB',
-            'data': archivos
+            'type': 'tempdb_monitor',
+            'title': '🧹 Monitor de TempDB',
+            'data': data
         })
     except Exception as e:
         if conn: conn.close()

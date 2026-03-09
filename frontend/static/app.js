@@ -176,6 +176,10 @@ function renderResponse(data) {
             renderDataLogMonitor(data.title, data.data);
             break;
 
+        case 'tempdb_monitor':
+            renderTempDBMonitor(data.title, data.data);
+            break;
+
         case 'ai':
             addBotMessage(data.message, null, data.source);
             break;
@@ -903,6 +907,92 @@ function renderDataLogMonitor(title, data) {
 
         html += `</div></div>`;
     });
+
+    html += `</div>`;
+
+    content.innerHTML = html;
+    msgEl.appendChild(avatar);
+    msgEl.appendChild(content);
+    container.appendChild(msgEl);
+    scrollToBottom();
+}
+
+// ── Render TempDB Monitor ──
+function renderTempDBMonitor(title, data) {
+    if (!data) {
+        addBotMessage('No se encontraron datos de TempDB.');
+        return;
+    }
+
+    const container = document.getElementById('chatMessages');
+    clearWelcome();
+
+    const msgEl = document.createElement('div');
+    msgEl.className = 'message bot';
+
+    const avatar = document.createElement('div');
+    avatar.className = 'msg-avatar';
+    avatar.textContent = '🤖';
+
+    const content = document.createElement('div');
+    content.className = 'msg-content monitor-dashboard';
+
+    let html = `<div class="monitor-header"><span class="monitor-title">${title}</span></div>`;
+    html += `<div style="padding: 15px; display: grid; gap: 20px;">`;
+
+    // 1. Files Section
+    html += `
+        <div class="monitor-section">
+            <div style="font-weight: 700; color: var(--accent-light); font-size: 14px; margin-bottom: 10px; display: flex; align-items: center; gap: 8px;">
+                📁 Archivos Físicos
+            </div>
+            <div style="display: grid; gap: 8px;">
+    `;
+    data.files.forEach(f => {
+        html += `
+            <div style="padding: 10px; background: rgba(255,255,255,0.03); border: 1px solid var(--border-subtle); border-radius: 8px;">
+                <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
+                    <span style="font-weight: 600; font-size: 13px;">${f.name}</span>
+                    <span style="color: var(--cyan); font-weight: 700; font-size: 13px;">${f.size} MB</span>
+                </div>
+                <div style="font-size: 10px; color: var(--text-muted); font-family: var(--font-mono); word-break: break-all;">${f.path}</div>
+            </div>
+        `;
+    });
+    html += `</div></div>`;
+
+    // 2. Sessions Section
+    html += `
+        <div class="monitor-section">
+            <div style="font-weight: 700; color: var(--accent-light); font-size: 14px; margin-bottom: 10px; display: flex; align-items: center; gap: 8px;">
+                👤 Uso por Sesiones Activas
+            </div>
+    `;
+
+    if (data.active_sessions.length === 0) {
+        html += `<div style="font-size: 12px; color: var(--text-muted); text-align: center; padding: 10px;">No hay sesiones de usuario usando TempDB actualmente.</div>`;
+    } else {
+        html += `<div style="display: grid; gap: 10px;">`;
+        data.active_sessions.forEach(s => {
+            html += `
+                <div style="padding: 10px; background: rgba(99, 102, 241, 0.05); border: 1px solid rgba(99, 102, 241, 0.2); border-radius: 10px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+                        <span style="font-weight: 700; color: var(--text-primary);">SID: ${s.sid} (${s.login})</span>
+                        <span style="background: var(--accent); color: white; padding: 2px 8px; border-radius: 4px; font-size: 10px;">${s.status}</span>
+                    </div>
+                    <div style="display: flex; gap: 15px; margin-bottom: 8px; font-size: 12px;">
+                        <span>📦 User: <strong style="color: var(--cyan);">${s.user_mb} MB</strong></span>
+                        <span>⚙️ Internal: <strong style="color: var(--yellow);">${s.internal_mb} MB</strong></span>
+                    </div>
+                    <div style="padding: 8px; background: rgba(0,0,0,0.3); border-radius: 6px; font-family: var(--font-mono); font-size: 11px; color: var(--text-secondary); max-height: 60px; overflow-y: auto; border: 1px solid rgba(255,255,255,0.05);">
+                        ${s.query}
+                    </div>
+                </div>
+            `;
+        });
+        html += `</div>`;
+    }
+    html += `</div>`;
 
     html += `</div>`;
 
