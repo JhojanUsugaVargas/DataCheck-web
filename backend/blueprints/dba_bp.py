@@ -93,7 +93,7 @@ def action_cpu():
 
         return jsonify({
             'type': 'instance_monitor',
-            'title': '⚙️ Monitor Rápido de Instancia',
+            'title': '⚙️ Monitor de Salud de Instancia',
             'data': data
         })
     except Exception as e:

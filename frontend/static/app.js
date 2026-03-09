@@ -78,7 +78,7 @@ function sendAction(action) {
         'status': '📊 Estado SQL Server',
         'bloqueos': '🔒 Bloqueos',
         'cancelar': '❌ Cancelar Consulta',
-        'cpu': '⚙️ Uso de CPU',
+        'cpu': '⚙️ Monitor de Salud',
         'whoisactive': '👤 Sesiones Activas',
         'discos': '💾 Espacio en Discos',
         'datalog': '🕵️‍♂️ Validar Data y Log',
