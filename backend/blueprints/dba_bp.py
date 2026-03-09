@@ -284,9 +284,11 @@ def action_performance():
         cpu_row = cursor.fetchone()
         cpu_val = cpu_row[0] if cpu_row else "N/A"
 
-        # 3. Memoria Remote (SQL)
+        # 3. Memoria Remote (OS)
         mem_query = """
-            SELECT total_physical_memory_kb/1024/1024, available_physical_memory_kb/1024/1024 
+            SELECT 
+                total_physical_memory_kb / 1048576.0 AS TotalGB, 
+                available_physical_memory_kb / 1048576.0 AS AvailGB 
             FROM sys.dm_os_sys_memory
         """
         cursor.execute(mem_query)
@@ -295,7 +297,7 @@ def action_performance():
             total_gb = round(float(mem_row[0]), 1)
             avail_gb = round(float(mem_row[1]), 1)
             used_gb = round(total_gb - avail_gb, 1)
-            mem_pct = round((used_gb / total_gb) * 100, 1) if total_gb > 0 else 0
+            mem_pct = round((used_gb * 100.0 / total_gb), 1) if total_gb > 0 else 0
             mem_info = f"{mem_pct}% usada ({used_gb} / {total_gb} GB)"
         else:
             mem_info = "N/A"

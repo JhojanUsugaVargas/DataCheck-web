@@ -426,7 +426,7 @@ function renderInstanceMonitor(title, data) {
 
             <!-- Memory Section -->
             <div class="monitor-section mem-section">
-                <div class="section-label">🧠 Memoria SQL</div>
+                <div class="section-label">🧠 Memoria del Servidor</div>
                 <div class="mem-bar-container">
                     <div class="mem-bar-bg">
                         <div class="mem-bar-fill" style="width:${data.sql_mem_usage_percent}%; background:${memColor}"></div>
@@ -438,15 +438,15 @@ function renderInstanceMonitor(title, data) {
                 <div class="mem-details">
                     <div class="mem-detail-item">
                         <span class="mem-detail-value">${data.sql_mem_used_mb.toLocaleString()}</span>
-                        <span class="mem-detail-label">Usada (MB)</span>
-                    </div>
-                    <div class="mem-detail-item">
-                        <span class="mem-detail-value">${data.sql_mem_free_mb.toLocaleString()}</span>
-                        <span class="mem-detail-label">Libre (MB)</span>
+                        <span class="mem-detail-label">En uso (SQL)</span>
                     </div>
                     <div class="mem-detail-item">
                         <span class="mem-detail-value">${data.sql_max_mem_mb.toLocaleString()}</span>
-                        <span class="mem-detail-label">Max Config (MB)</span>
+                        <span class="mem-detail-label">Total Servidor</span>
+                    </div>
+                    <div class="mem-detail-item">
+                        <span class="mem-detail-value">${data.sql_mem_free_mb.toLocaleString()}</span>
+                        <span class="mem-detail-label">Libre Servidor</span>
                     </div>
                 </div>
             </div>
