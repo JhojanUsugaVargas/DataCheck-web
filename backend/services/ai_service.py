@@ -9,10 +9,11 @@ from duckduckgo_search import DDGS
 # Configurar Gemini
 try:
     genai.configure(api_key=GEMINI_API_KEY)
+    # Usar gemini-1.5-flash que es el más estándar actualmente
     ai_model = genai.GenerativeModel('gemini-1.5-flash')
     GEMINI_AVAILABLE = True
 except Exception as e:
-    logging.error(f"Error configurando Gemini: {e}")
+    logging.error(f"Error crítico configurando Gemini: {e}")
     GEMINI_AVAILABLE = False
 
 # Configurar DuckDuckGo
@@ -67,52 +68,59 @@ def guardar_en_historial(usuario, pregunta, respuesta, es_error, fuente):
 
 def get_ai_response(texto, username):
     """Procesa preguntas o errores SQL con Gemini → BD → Web."""
-    from flask import jsonify
-    
-    if not texto:
-        return {'type': 'info', 'message': '💡 Escribe un error SQL o una pregunta sobre bases de datos.'}
+    try:
+        if not texto or not isinstance(texto, str):
+            if isinstance(texto, dict):
+                # Si recibimos un diccionario (como el de soporte), intentamos extraer el mensaje
+                texto = texto.get('mensaje', '')
+            
+            if not texto or not isinstance(texto, str):
+                return {'type': 'info', 'message': '💡 Escribe un error SQL o una pregunta sobre bases de datos.'}
 
-    es_error = es_error_sql(texto)
-    es_pregunta = es_pregunta_sql(texto)
+        es_error = es_error_sql(texto)
+        es_pregunta = es_pregunta_sql(texto)
 
-    if not (es_error or es_pregunta):
-        return {'type': 'info', 'message': '💡 No reconozco un error o pregunta SQL.'}
+        if not (es_error or es_pregunta):
+            return {'type': 'info', 'message': '💡 No reconozco un error o pregunta SQL.'}
 
-    # 1. Buscar en BD
-    respuesta_bd = buscar_en_historial(texto)
-    if respuesta_bd:
-        return {'type': 'ai', 'message': respuesta_bd, 'source': 'Historial'}
+        # 1. Buscar en BD
+        respuesta_bd = buscar_en_historial(texto)
+        if respuesta_bd:
+            return {'type': 'ai', 'message': respuesta_bd, 'source': 'Historial'}
 
-    # 2. Gemini AI
-    if GEMINI_AVAILABLE:
-        try:
-            prompt = (f"Error SQL: {texto}\nSolución paso a paso en español, solo texto plano."
-                      if es_error else
-                      f"Pregunta SQL: {texto}\nExplica con ejemplo en español, solo texto plano.")
-            response = ai_model.generate_content(prompt)
-            if response and response.text:
-                respuesta = response.text.strip()
-                respuesta = re.sub(r'([*_`])', '', respuesta)
-                respuesta = re.sub(r'\[([^\]]+)\]\([^\)]*\)', r'\1', respuesta)
-                if len(respuesta) > 3800:
-                    respuesta = respuesta[:3750] + "\n\n... (respuesta truncada)"
-                guardar_en_historial(username, texto, respuesta, es_error, 'Gemini')
-                return {'type': 'ai', 'message': respuesta, 'source': 'Gemini AI'}
-        except Exception as e:
-            logging.error(f"Gemini error: {e}")
+        # 2. Gemini AI
+        if GEMINI_AVAILABLE:
+            try:
+                prompt = (f"Error SQL: {texto}\nSolución paso a paso en español, solo texto plano."
+                          if es_error else
+                          f"Pregunta SQL: {texto}\nExplica con ejemplo en español, solo texto plano.")
+                response = ai_model.generate_content(prompt)
+                if response and response.text:
+                    respuesta = response.text.strip()
+                    respuesta = re.sub(r'([*_`])', '', respuesta)
+                    respuesta = re.sub(r'\[([^\]]+)\]\([^\)]*\)', r'\1', respuesta)
+                    if len(respuesta) > 3800:
+                        respuesta = respuesta[:3750] + "\n\n... (respuesta truncada)"
+                    guardar_en_historial(username, texto, respuesta, es_error, 'Gemini')
+                    return {'type': 'ai', 'message': respuesta, 'source': 'Gemini AI'}
+            except Exception as e:
+                logging.error(f"Gemini error: {e}")
 
-    # 3. DuckDuckGo fallback
-    if DDGS_AVAILABLE:
-        try:
-            query = f'"{texto[:80]}" SQL Server solución' if es_error else f'"{texto}" SQL tutorial'
-            with DDGS() as ddgs:
-                resultados = list(ddgs.text(query, max_results=2))
-            if resultados:
-                contexto = "\n".join([f"{i+1}. {r['title']}\n{r['body'][:140]}..." for i, r in enumerate(resultados)])
-                respuesta = f"Resultados para: {query}\n\n{contexto}"
-                guardar_en_historial(username, texto, respuesta, es_error, 'Web')
-                return {'type': 'ai', 'message': respuesta, 'source': 'Búsqueda Web'}
-        except Exception as e:
-            logging.error(f"DuckDuckGo error: {e}")
+        # 3. DuckDuckGo fallback
+        if DDGS_AVAILABLE:
+            try:
+                query = f'"{texto[:80]}" SQL Server solución' if es_error else f'"{texto}" SQL tutorial'
+                with DDGS() as ddgs:
+                    resultados = list(ddgs.text(query, max_results=2))
+                if resultados:
+                    contexto = "\n".join([f"{i+1}. {r['title']}\n{r['body'][:140]}..." for i, r in enumerate(resultados)])
+                    respuesta = f"Resultados para: {query}\n\n{contexto}"
+                    guardar_en_historial(username, texto, respuesta, es_error, 'Web')
+                    return {'type': 'ai', 'message': respuesta, 'source': 'Búsqueda Web'}
+            except Exception as e:
+                logging.error(f"DuckDuckGo error: {e}")
 
-    return {'type': 'info', 'message': '⚠️ No pude encontrar una respuesta.'}
+        return {'type': 'info', 'message': '⚠️ No pude encontrar una respuesta procesable en este momento.'}
+    except Exception as e:
+        logging.error(f"Error global en get_ai_response: {e}")
+        return {'type': 'error', 'message': f'❌ Error interno al procesar la consulta AI: {str(e)}'}
