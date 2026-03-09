@@ -937,3 +937,85 @@ async function deleteUser(username) {
         alert('Error de conexión');
     }
 }
+
+// ── Feedback Logic ──
+function openFeedbackModal() {
+    openModal('feedbackModal');
+    resetFeedback();
+}
+
+function resetFeedback() {
+    document.getElementById('feedbackSuggestion').value = '';
+    const stars = document.querySelectorAll('.star');
+    stars.forEach(s => s.classList.remove('selected', 'active'));
+    window.currentRating = 0;
+}
+
+// Star interaction
+document.addEventListener('DOMContentLoaded', () => {
+    const stars = document.querySelectorAll('.star');
+    stars.forEach(star => {
+        star.addEventListener('click', () => {
+            const val = parseInt(star.getAttribute('data-value'));
+            window.currentRating = val;
+            updateStars(val);
+        });
+
+        star.addEventListener('mouseenter', () => {
+            const val = parseInt(star.getAttribute('data-value'));
+            updateStars(val, true);
+        });
+
+        star.addEventListener('mouseleave', () => {
+            updateStars(window.currentRating || 0);
+        });
+    });
+});
+
+function updateStars(val, isHover = false) {
+    const stars = document.querySelectorAll('.star');
+    stars.forEach(s => {
+        const sVal = parseInt(s.getAttribute('data-value'));
+        if (sVal <= val) {
+            s.classList.add(isHover ? 'active' : 'selected');
+        } else {
+            s.classList.remove('selected', 'active');
+        }
+    });
+}
+
+async function submitFeedback() {
+    const rating = window.currentRating;
+    const suggestion = document.getElementById('feedbackSuggestion').value;
+    const btn = document.getElementById('submitFeedbackBtn');
+
+    if (!rating) {
+        alert('Por favor, selecciona una calificación (estrellas).');
+        return;
+    }
+
+    btn.disabled = true;
+    btn.textContent = 'Enviando...';
+
+    try {
+        const res = await fetch(window.API_BASE + '/api/feedback', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ rating, suggestion })
+        });
+        const data = await res.json();
+
+        if (data.success) {
+            alert(data.message);
+            closeModal('feedbackModal');
+        } else {
+            alert('Error: ' + data.message);
+        }
+    } catch (err) {
+        console.error('Feedback error:', err);
+        alert('Error de conexión al enviar feedback.');
+    } finally {
+        btn.disabled = false;
+        btn.textContent = 'Enviar Feedback';
+    }
+}

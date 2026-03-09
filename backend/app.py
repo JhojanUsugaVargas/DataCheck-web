@@ -13,6 +13,7 @@ from blueprints.auth_bp import auth_bp
 from blueprints.admin_bp import admin_bp
 from blueprints.dba_bp import dba_bp
 from blueprints.chat_bp import chat_bp
+from blueprints.feedback_bp import feedback_bp
 from utils.decorators import login_required, role_required
 
 app = Flask(__name__, 
@@ -30,6 +31,7 @@ app.register_blueprint(auth_bp)
 app.register_blueprint(admin_bp)
 app.register_blueprint(dba_bp)
 app.register_blueprint(chat_bp)
+app.register_blueprint(feedback_bp)
 
 # Logging configuration
 logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')

@@ -169,6 +169,8 @@
 
             <div class="header-right">
                 <button class="theme-toggle" id="themeToggle" onclick="toggleTheme()" title="Cambiar Tema">🌙</button>
+                <button class="theme-toggle" id="feedbackToggle" onclick="openFeedbackModal()" title="Danos tu Feedback"
+                    style="margin-right: 8px;">⭐</button>
                 <div class="user-profile-header user-panel-trigger" onclick="openProfileModal()">
                     <div class="user-info-header">
                         <span class="user-name-header">{{ full_name }}</span>
@@ -408,6 +410,34 @@
                 </div>
                 <button type="submit" class="save-btn">Crear Instancia</button>
             </form>
+        </div>
+    </div>
+
+    <!-- Feedback Modal -->
+    <div class="modal-overlay" id="feedbackModal">
+        <div class="modal-content" style="max-width: 450px;">
+            <div class="modal-header">
+                <h3>Tu Opinión Importa</h3>
+                <button class="close-modal" onclick="closeModal('feedbackModal')">✕</button>
+            </div>
+            <div style="text-align: center; margin-bottom: 20px;">
+                <p style="color: var(--text-secondary); font-size: 14px;">¿Cómo calificarías tu experiencia con
+                    DataCheck?</p>
+                <div class="star-rating" id="starRating">
+                    <span class="star" data-value="1">⭐</span>
+                    <span class="star" data-value="2">⭐</span>
+                    <span class="star" data-value="3">⭐</span>
+                    <span class="star" data-value="4">⭐</span>
+                    <span class="star" data-value="5">⭐</span>
+                </div>
+            </div>
+            <div class="form-group">
+                <label>Sugerencias o Recomendaciones</label>
+                <textarea id="feedbackSuggestion" class="form-input" rows="4"
+                    placeholder="Cuéntanos cómo podemos mejorar..."></textarea>
+            </div>
+            <button type="button" class="save-btn" onclick="submitFeedback()" id="submitFeedbackBtn">Enviar
+                Feedback</button>
         </div>
     </div>
 
