@@ -52,7 +52,7 @@ def action_bloqueos():
             SELECT TOP 5 
                 login_name, session_id, LEFT(text, 100) AS query_preview,
                 total_elapsed_time / 1000 AS segundos_ejecucion, Fecha
-            FROM DataCheck.dbo.Deadlocks_Tab
+            FROM Deadlocks_Tab
             ORDER BY Fecha DESC
         """)
         rows = cursor.fetchall()
