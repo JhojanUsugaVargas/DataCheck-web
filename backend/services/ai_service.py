@@ -9,7 +9,7 @@ from duckduckgo_search import DDGS
 # Configurar Gemini
 try:
     genai.configure(api_key=GEMINI_API_KEY)
-    ai_model = genai.GenerativeModel('gemini-2.5-flash')
+    ai_model = genai.GenerativeModel('gemini-1.5-flash')
     GEMINI_AVAILABLE = True
 except Exception as e:
     logging.error(f"Error configurando Gemini: {e}")

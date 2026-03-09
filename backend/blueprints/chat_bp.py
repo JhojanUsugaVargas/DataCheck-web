@@ -18,7 +18,7 @@ def api_chat():
 
     if not action:
         # Detección de palabras clave para acciones rápidas
-        msg_low = user_message.lower()
+        msg_low = user_message.lower() if isinstance(user_message, str) else ""
         if "compactar tempdb" in msg_low or "shrink tempdb" in msg_low:
             action = "tempdb_shrink"
 
