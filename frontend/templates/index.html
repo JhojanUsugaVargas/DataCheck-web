@@ -46,7 +46,7 @@
             <div style="display: flex; flex-direction: column; gap: 8px;">
                 <div style="display: flex; justify-content: space-between; align-items: center;">
                     <p class="sidebar-label" style="margin: 0;">Contrato</p>
-                    {% if role.lower() == 'administrador' or role.lower() == 'superadmin' %}
+                    {% if role.lower() in ['administrador', 'admin', 'superadmin'] %}
                     <button class="add-btn-sm" onclick="openAddContractModal()" title="Nuevo Contrato">+</button>
                     {% endif %}
                 </div>
@@ -60,7 +60,7 @@
 
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 2px;">
                     <p class="sidebar-label" style="margin: 0;">Instancia</p>
-                    {% if role.lower() == 'administrador' or role.lower() == 'superadmin' %}
+                    {% if role.lower() in ['administrador', 'admin', 'superadmin'] %}
                     <button class="add-btn-sm" onclick="openAddInstanceModal()" title="Nueva Instancia">+</button>
                     {% endif %}
                 </div>
@@ -78,7 +78,7 @@
             <div class="sidebar-actions">
                 {% set r = role.lower() %}
                 {% set is_dba = 'dba' in r or 'admin' in r or 'super' in r %}
-                {% set is_admin = 'administrador' in r or 'super' in r %}
+                {% set is_admin = 'administrador' in r or 'admin' in r or 'super' in r %}
                 <button class="action-btn" onclick="sendAction('status')">
                     <span class="action-icon">📊</span>
                     <span>Estado SQL Server</span>

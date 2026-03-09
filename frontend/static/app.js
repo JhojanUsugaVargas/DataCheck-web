@@ -619,7 +619,7 @@ async function loadUsers() {
                     <div style="display: flex; gap: 5px; justify-content: flex-start;">
                         <button class="quick-btn" title="Renombrar" style="padding: 4px; border: none; background: transparent; font-size: 14px;" onclick="renameUser('${u.username}', '${u.full_name}')">✏️</button>
                         <button class="quick-btn" title="Resetear Password" style="padding: 4px; border: none; background: transparent; font-size: 14px;" onclick="resetPassword('${u.username}')">🔑</button>
-                        <button class="quick-btn" title="${toggleTitle}" style="padding: 4px; border: none; background: transparent; font-size: 14px;" onclick="toggleUserStatus('${u.username}')">${toggleIcon}</button>
+                        <button class="quick-btn" title="${toggleTitle}" style="padding: 4px; border: none; background: transparent; font-size: 14px;" onclick="toggleUserStatus('${u.username}', ${!isActive})">${toggleIcon}</button>
                         <button class="quick-btn" title="Eliminar" style="padding: 4px; border: none; background: transparent; font-size: 14px;" onclick="deleteUser('${u.username}')">🗑️</button>
                     </div>
                 </td>
@@ -885,7 +885,7 @@ async function renameUser(username, currentName) {
         const res = await fetch(window.API_BASE + '/api/admin/users/rename', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ username: username, new_name: newName })
+            body: JSON.stringify({ old_username: username, new_username: newName })
         });
         const data = await res.json();
         if (data.success) {
@@ -899,14 +899,14 @@ async function renameUser(username, currentName) {
     }
 }
 
-async function toggleUserStatus(username) {
+async function toggleUserStatus(username, targetStatus) {
     if (!confirm(`¿Seguro que deseas cambiar el estado del usuario ${username}?`)) return;
 
     try {
         const res = await fetch(window.API_BASE + '/api/admin/users/toggle_status', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ username: username })
+            body: JSON.stringify({ username: username, is_active: targetStatus })
         });
         const data = await res.json();
         if (data.success) {
@@ -923,10 +923,8 @@ async function deleteUser(username) {
     if (!confirm(`⚠️ ATENCIÓN: ¿Estás ABSOLUTAMENTE SEGURO de eliminar al usuario ${username}? Esta acción no se puede deshacer.`)) return;
 
     try {
-        const res = await fetch(window.API_BASE + '/api/admin/users/delete', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ username: username })
+        const res = await fetch(window.API_BASE + `/api/admin/users/delete?username=${username}`, {
+            method: 'DELETE'
         });
         const data = await res.json();
         if (data.success) {
