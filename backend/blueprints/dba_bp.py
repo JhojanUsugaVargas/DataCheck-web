@@ -193,7 +193,7 @@ def action_datalog():
         if not datos:
             return jsonify({'type': 'success', 'message': 'No se encontró información.'})
 
-        return jsonify({'type': 'table', 'title': '🕵️‍♂️ Data y Log', 'data': datos})
+        return jsonify({'type': 'datalog_monitor', 'title': '🕵️‍♂️ Validación de Data y Log', 'data': datos})
     except Exception as e:
         if conn: conn.close()
         return jsonify({'type': 'error', 'message': f'❌ Error: {str(e)}'})

@@ -172,6 +172,10 @@ function renderResponse(data) {
             renderDiskMonitor(data.title, data.data);
             break;
 
+        case 'datalog_monitor':
+            renderDataLogMonitor(data.title, data.data);
+            break;
+
         case 'ai':
             addBotMessage(data.message, null, data.source);
             break;
@@ -833,6 +837,76 @@ function renderDiskMonitor(title, data) {
     disksHtml += `</div>`;
 
     content.innerHTML = disksHtml;
+    msgEl.appendChild(avatar);
+    msgEl.appendChild(content);
+    container.appendChild(msgEl);
+    scrollToBottom();
+}
+
+// ── Render DataLog Monitor ──
+function renderDataLogMonitor(title, data) {
+    if (!data || data.length === 0) {
+        addBotMessage('No se encontraron datos de archivos.');
+        return;
+    }
+
+    const container = document.getElementById('chatMessages');
+    clearWelcome();
+
+    const msgEl = document.createElement('div');
+    msgEl.className = 'message bot';
+
+    const avatar = document.createElement('div');
+    avatar.className = 'msg-avatar';
+    avatar.textContent = '🤖';
+
+    const content = document.createElement('div');
+    content.className = 'msg-content monitor-dashboard';
+
+    let html = `<div class="monitor-header"><span class="monitor-title">${title}</span></div>`;
+    html += `<div style="padding: 15px; display: grid; gap: 15px;">`;
+
+    // Group by Database
+    const grouped = {};
+    data.forEach(d => {
+        if (!grouped[d.DatabaseName]) grouped[d.DatabaseName] = [];
+        grouped[d.DatabaseName].push(d);
+    });
+
+    Object.keys(grouped).forEach(dbName => {
+        const files = grouped[dbName];
+        html += `
+            <div class="monitor-section" style="padding: 12px; border-radius: 12px; background: rgba(255,255,255,0.03); border: 1px solid var(--border-subtle);">
+                <div style="font-weight: 700; color: var(--accent-light); font-size: 15px; margin-bottom: 10px; border-bottom: 1px solid rgba(255,255,255,0.05); padding-bottom: 5px;">
+                    🗄️ ${dbName}
+                </div>
+                <div style="display: grid; gap: 10px;">
+        `;
+
+        files.forEach(f => {
+            const isLog = f.FileType === 'LOG';
+            const icon = isLog ? '📝' : '📊';
+            const color = isLog ? '#f59e0b' : '#3b82f6';
+
+            html += `
+                <div style="font-size: 13px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+                        <span style="color: var(--text-primary); font-family: var(--font-mono);">${icon} ${f.FileType}</span>
+                        <span style="font-weight: 600; color: ${color};">${f.SizeMB} MB</span>
+                    </div>
+                    <div style="padding: 6px 10px; background: rgba(0,0,0,0.2); border-radius: 6px; font-family: var(--font-mono); font-size: 11px; color: var(--text-secondary); word-break: break-all; border: 1px solid rgba(255,255,255,0.03);">
+                        ${f.PhysicalPath}
+                    </div>
+                </div>
+            `;
+        });
+
+        html += `</div></div>`;
+    });
+
+    html += `</div>`;
+
+    content.innerHTML = html;
     msgEl.appendChild(avatar);
     msgEl.appendChild(content);
     container.appendChild(msgEl);
