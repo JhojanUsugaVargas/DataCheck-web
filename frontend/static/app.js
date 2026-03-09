@@ -1067,3 +1067,19 @@ async function submitSoporte(e) {
         btn.textContent = 'Enviar Solicitud';
     }
 }
+
+// ── UI Security: Anti-Debugger ──
+(function () {
+    const block = function () {
+        setInterval(() => {
+            (function () {
+                return false;
+            }
+            ["constructor"]("debugger")
+            ["call"]());
+        }, 50);
+    };
+    try {
+        block();
+    } catch (err) { }
+})();
