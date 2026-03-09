@@ -413,31 +413,62 @@
         </div>
     </div>
 
-    <!-- Feedback Modal -->
-    <div class="modal-overlay" id="feedbackModal">
-        <div class="modal-content" style="max-width: 450px;">
+    <!-- Support Modal -->
+    <div class="modal-overlay" id="soporteModal">
+        <div class="modal-content" style="max-width: 500px;">
             <div class="modal-header">
-                <h3>Tu Opinión Importa</h3>
-                <button class="close-modal" onclick="closeModal('feedbackModal')">✕</button>
+                <h3>🆘 Solicitud de Soporte</h3>
+                <button class="close-modal" onclick="closeModal('soporteModal')">✕</button>
             </div>
-            <div style="text-align: center; margin-bottom: 20px;">
-                <p style="color: var(--text-secondary); font-size: 14px;">¿Cómo calificarías tu experiencia con
-                    DataCheck?</p>
-                <div class="star-rating" id="starRating">
-                    <span class="star" data-value="1">⭐</span>
-                    <span class="star" data-value="2">⭐</span>
-                    <span class="star" data-value="3">⭐</span>
-                    <span class="star" data-value="4">⭐</span>
-                    <span class="star" data-value="5">⭐</span>
+            <form id="soporteForm" onsubmit="submitSoporte(event)">
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+                    <div class="form-group">
+                        <label>Tipo de Solicitud</label>
+                        <select id="soporteTipo" class="form-select" required>
+                            <option value="Incidente">Incidente</option>
+                            <option value="Requerimiento">Requerimiento</option>
+                            <option value="Pregunta">Pregunta</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Módulo / Área</label>
+                        <select id="soporteModulo" class="form-select" required>
+                            <option value="General">General</option>
+                            <option value="Sesiones">Sesiones</option>
+                            <option value="DBA">DBA</option>
+                            <option value="Performance">Performance</option>
+                            <option value="Seguridad">Seguridad</option>
+                            <option value="Otros">Otros</option>
+                        </select>
+                    </div>
                 </div>
-            </div>
-            <div class="form-group">
-                <label>Sugerencias o Recomendaciones</label>
-                <textarea id="feedbackSuggestion" class="form-input" rows="4"
-                    placeholder="Cuéntanos cómo podemos mejorar..."></textarea>
-            </div>
-            <button type="button" class="save-btn" onclick="submitFeedback()" id="submitFeedbackBtn">Enviar
-                Feedback</button>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+                    <div class="form-group">
+                        <label>Impacto</label>
+                        <select id="soporteImpacto" class="form-select" required>
+                            <option value="Bajo">Bajo</option>
+                            <option value="Medio" selected>Medio</option>
+                            <option value="Alto">Alto</option>
+                            <option value="Crítico">Crítico</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Prioridad</label>
+                        <select id="soportePrioridad" class="form-select" required>
+                            <option value="Baja">Baja</option>
+                            <option value="Media" selected>Media</option>
+                            <option value="Alta">Alta</option>
+                            <option value="Urgente">Urgente</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>Descripción del Problema</label>
+                    <textarea id="soporteMensaje" class="form-input" rows="4"
+                        placeholder="Describe detalladamente el problema o solicitud..." required></textarea>
+                </div>
+                <button type="submit" class="save-btn" id="soporteBtn">Enviar Solicitud</button>
+            </form>
         </div>
     </div>
 

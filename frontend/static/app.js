@@ -87,6 +87,11 @@ function sendAction(action) {
         'soporte': '🆘 Solicitud de Soporte'
     };
 
+    if (action === 'soporte') {
+        openSoporteModal();
+        return;
+    }
+
     addMessage('user', actionLabels[action] || action);
     showTyping();
     callAPI(action, '');
@@ -1017,5 +1022,48 @@ async function submitFeedback() {
     } finally {
         btn.disabled = false;
         btn.textContent = 'Enviar Feedback';
+    }
+}
+
+// ── Support Modal Logic ──
+function openSoporteModal() {
+    openModal('soporteModal');
+    document.getElementById('soporteForm').reset();
+}
+
+async function submitSoporte(e) {
+    if (e) e.preventDefault();
+    const btn = document.getElementById('soporteBtn');
+    const data = {
+        tipo: document.getElementById('soporteTipo').value,
+        modulo: document.getElementById('soporteModulo').value,
+        impacto: document.getElementById('soporteImpacto').value,
+        prioridad: document.getElementById('soportePrioridad').value,
+        mensaje: document.getElementById('soporteMensaje').value
+    };
+
+    btn.disabled = true;
+    btn.textContent = 'Enviando...';
+
+    try {
+        const res = await fetch(window.API_BASE + '/api/chat', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ action: 'soporte', message: data })
+        });
+        const result = await res.json();
+
+        if (result.type === 'success') {
+            addBotMessage(result.message);
+            closeModal('soporteModal');
+        } else {
+            alert('Error: ' + (result.message || 'Error desconocido'));
+        }
+    } catch (err) {
+        console.error('Support error:', err);
+        alert('Error de conexión al enviar la solicitud.');
+    } finally {
+        btn.disabled = false;
+        btn.textContent = 'Enviar Solicitud';
     }
 }
