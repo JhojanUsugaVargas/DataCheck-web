@@ -30,7 +30,7 @@ RECAPTCHA_SITE_KEY = os.environ.get('RECAPTCHA_SITE_KEY')
 RECAPTCHA_SECRET_KEY = os.environ.get('RECAPTCHA_SECRET_KEY')
 
 # === App Version ===
-APP_VERSION = "Beta 1.0.0"
+APP_VERSION = "Development v1.0.0"
 
 
 fernet = Fernet(FERNET_KEY)
