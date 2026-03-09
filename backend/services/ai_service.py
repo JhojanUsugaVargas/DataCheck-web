@@ -36,11 +36,8 @@ def buscar_en_historial(pregunta):
         return None
     try:
         cursor = conn.cursor()
-        cursor.execute("""
-            SELECT TOP 1 Respuesta FROM HistorialConsultas
-            WHERE Pregunta LIKE ? OR ? LIKE CONCAT('%', Pregunta, '%')
-            ORDER BY Id DESC
-        """, f'%{pregunta[:50]}%', pregunta[:50])
+        cursor.execute("SELECT TOP 1 [Respuesta] FROM [HistorialConsultas] WHERE [Pregunta] LIKE ? OR ? LIKE '%' + [Pregunta] + '%' ORDER BY [Id] DESC", 
+                       f'%{pregunta[:50]}%', pregunta[:50])
         row = cursor.fetchone()
         conn.close()
         return row[0] if row else None
@@ -56,10 +53,8 @@ def guardar_en_historial(usuario, pregunta, respuesta, es_error, fuente):
         return
     try:
         cursor = conn.cursor()
-        cursor.execute("""
-            INSERT INTO HistorialConsultas (Usuario, Pregunta, Respuesta, EsError, Fuente)
-            VALUES (?, ?, ?, ?, ?)
-        """, usuario, pregunta, respuesta, es_error, fuente)
+        cursor.execute("INSERT INTO [HistorialConsultas] ([Usuario], [Pregunta], [Respuesta], [EsError], [Fuente]) VALUES (?, ?, ?, ?, ?)",
+                       usuario, pregunta, respuesta, es_error, fuente)
         conn.commit()
         conn.close()
     except Exception as e:
