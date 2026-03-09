@@ -172,7 +172,7 @@ def action_discos():
         if not discos:
             return jsonify({'type': 'success', 'message': 'No se encontró información de espacio en disco.'})
 
-        return jsonify({'type': 'table', 'title': '💾 Espacio en Discos', 'data': discos})
+        return jsonify({'type': 'disk_monitor', 'title': '💾 Espacio en Discos', 'data': discos})
     except Exception as e:
         if conn: conn.close()
         return jsonify({'type': 'error', 'message': f'❌ Error: {str(e)}'})

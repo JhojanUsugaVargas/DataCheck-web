@@ -168,6 +168,10 @@ function renderResponse(data) {
             renderInstanceMonitor(data.title, data.data);
             break;
 
+        case 'disk_monitor':
+            renderDiskMonitor(data.title, data.data);
+            break;
+
         case 'ai':
             addBotMessage(data.message, null, data.source);
             break;
@@ -760,6 +764,79 @@ async function activateMFA() {
         btn.disabled = false;
         btn.textContent = 'Verificar y Activar';
     }
+}
+
+// ── Render Disk Monitor ──
+function renderDiskMonitor(title, data) {
+    if (!data || data.length === 0) {
+        addBotMessage('No se encontraron datos de discos.');
+        return;
+    }
+
+    const container = document.getElementById('chatMessages');
+    clearWelcome();
+
+    const msgEl = document.createElement('div');
+    msgEl.className = 'message bot';
+
+    const avatar = document.createElement('div');
+    avatar.className = 'msg-avatar';
+    avatar.textContent = '🤖';
+
+    const content = document.createElement('div');
+    content.className = 'msg-content monitor-dashboard';
+
+    let disksHtml = `<div class="monitor-header"><span class="monitor-title">${title}</span></div>`;
+    disksHtml += `<div style="padding: 15px; display: grid; gap: 12px;">`;
+
+    data.forEach(d => {
+        const freePct = parseFloat(d.FreePct);
+        const totalGB = parseFloat(d.TotalGB);
+        const usedGB = parseFloat(d.UsedGB);
+        const freeGB = parseFloat(d.FreeGB);
+        const usedPct = 100 - freePct;
+
+        // Color based on free space
+        const barColor = freePct < 10 ? '#ef4444' : freePct < 20 ? '#f59e0b' : '#10b981';
+
+        disksHtml += `
+            <div class="monitor-section" style="padding: 12px; border-radius: 10px; background: rgba(255,255,255,0.03); border: 1px solid var(--border-subtle);">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                    <span style="font-weight: 700; color: var(--text-primary); font-size: 15px;">Unidad ${d.Drive}</span>
+                    <span style="font-size: 12px; color: ${barColor}; font-weight: 600;">${freePct}% Libre</span>
+                </div>
+                
+                <div class="mem-bar-container" style="height: 10px; margin-bottom: 12px;">
+                    <div class="mem-bar-bg" style="height: 10px; border-radius: 5px;">
+                        <div class="mem-bar-fill" style="width: ${usedPct}%; background: ${barColor}; height: 10px; border-radius: 5px;"></div>
+                    </div>
+                </div>
+
+                <div class="mem-details" style="grid-template-columns: 1fr 1fr 1fr; border-top: 1px solid rgba(255,255,255,0.05); padding-top: 8px;">
+                    <div class="mem-detail-item">
+                        <span class="mem-detail-value" style="font-size: 14px;">${totalGB}</span>
+                        <span class="mem-detail-label">Total (GB)</span>
+                    </div>
+                    <div class="mem-detail-item">
+                        <span class="mem-detail-value" style="font-size: 14px;">${usedGB}</span>
+                        <span class="mem-detail-label">Usado (GB)</span>
+                    </div>
+                    <div class="mem-detail-item">
+                        <span class="mem-detail-value" style="font-size: 14px; color: ${barColor}">${freeGB}</span>
+                        <span class="mem-detail-label">Libre (GB)</span>
+                    </div>
+                </div>
+            </div>
+        `;
+    });
+
+    disksHtml += `</div>`;
+
+    content.innerHTML = disksHtml;
+    msgEl.appendChild(avatar);
+    msgEl.appendChild(content);
+    container.appendChild(msgEl);
+    scrollToBottom();
 }
 
 // ── Inactivity Timeout Logic ──
