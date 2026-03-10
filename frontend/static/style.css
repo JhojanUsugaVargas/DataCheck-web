@@ -301,7 +301,7 @@ body.light-mode .form-input-sm {
     width: 100%;
     display: flex;
     align-items: center;
-    gap: 6px;
+    gap: 4px;
     padding: 11px 14px;
     background: transparent;
     border: 1px solid transparent;
@@ -327,7 +327,7 @@ body.light-mode .form-input-sm {
 
 .action-icon {
     font-size: 16px;
-    width: 24px;
+    width: 20px;
     text-align: center;
     flex-shrink: 0;
 }
