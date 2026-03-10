@@ -87,6 +87,7 @@ function sendAction(action) {
         'jobs': '📋 Validación de Jobs',
         'alwayson': '🔗 Always On Availability Groups',
         'databases': '🗄️ Bases de Datos',
+        'backups': '💾 Validar Backups',
         'soporte': '🆘 Solicitud de Soporte'
     };
 

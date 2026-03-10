@@ -9,6 +9,7 @@ from services.dba_queries.tempdb_monitor import query_tempdb_usage
 from services.dba_queries.job_monitor import query_job_monitor
 from services.dba_queries.alwayson_monitor import query_alwayson_status
 from services.dba_queries.databases_monitor import query_databases
+from services.dba_queries.backup_monitor import query_backup_status
 import re
 
 dba_bp = Blueprint('dba', __name__)
@@ -311,6 +312,23 @@ def action_databases():
     except Exception as e:
         if conn: conn.close()
         return jsonify({'type': 'error', 'message': f'❌ Error al consultar bases de datos: {str(e)}'})
+
+@dba_bp.route('/api/backups')
+@login_required
+def action_backups():
+    """Valida el estado de backups de las bases de datos de usuario."""
+    conn = get_active_conn()
+    if not conn:
+        return jsonify({'type': 'error', 'message': '❌ Error al conectar a la base de datos.'})
+
+    try:
+        cursor = conn.cursor()
+        data = query_backup_status(cursor)
+        conn.close()
+        return jsonify(data)
+    except Exception as e:
+        if conn: conn.close()
+        return jsonify({'type': 'error', 'message': f'❌ Error al validar backups: {str(e)}'})
 
 @dba_bp.route('/api/tempdb/shrink')
 @login_required
