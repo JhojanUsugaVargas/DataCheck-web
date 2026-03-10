@@ -84,6 +84,7 @@ function sendAction(action) {
         'datalog': '🕵️‍♂️ Validar Data y Log',
         'tempdb': '🧹 TempDB',
         'performance': '📈 Verificar Performance',
+        'jobs': '📋 Validación de Jobs',
         'soporte': '🆘 Solicitud de Soporte'
     };
 

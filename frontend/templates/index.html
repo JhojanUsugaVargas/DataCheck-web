@@ -138,6 +138,11 @@
                 </button>
                 {% endif %}
 
+                <button class="action-btn" onclick="sendAction('jobs')">
+                    <span class="action-icon">📋</span>
+                    <span>Validación de Jobs</span>
+                </button>
+
                 {% if is_dba %}
                 <button class="action-btn" onclick="sendAction('performance')">
                     <span class="action-icon">📈</span>
@@ -210,6 +215,7 @@
                     <button class="quick-btn" onclick="sendAction('cpu')">⚙️ Salud</button>
                     <button class="quick-btn" onclick="sendAction('performance')">📈 Performance</button>
                     <button class="quick-btn" onclick="sendAction('discos')">💾 Discos</button>
+                    <button class="quick-btn" onclick="sendAction('jobs')">📋 Jobs</button>
                 </div>
             </div>
         </div>
