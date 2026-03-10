@@ -38,6 +38,22 @@ pipeline {
             }
         }
 
+        stage('Prune Old Images') {
+            agent { label 'vbogdtlmosp11' }
+            steps {
+                script {
+                    echo "Depurando imágenes antiguas, manteniendo solo las últimas 5..."
+                    sh """
+                        sudo -i bash -c 'export PATH=/usr/local/bin:\$PATH; \
+                        nerdctl -n k8s.io images --format "{{.Tag}}" datacheck-web | \
+                        sort -V -r | \
+                        tail -n +6 | \
+                        xargs -r -I {} nerdctl -n k8s.io rmi datacheck-web:{}'
+                    """
+                }
+            }
+        }
+
         stage('Patch Deployment YAML') {
             agent { label 'vbogdtlmosp11' }
             steps {
