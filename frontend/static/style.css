@@ -766,6 +766,123 @@ body.light-mode .welcome-card {
 }
 
 /* ============================================================
+   SERVER UPTIME CARD
+   ============================================================ */
+.uptime-card {
+    min-width: 320px;
+    max-width: 420px;
+    padding: 0 !important;
+    overflow: hidden;
+    border: 1px solid rgba(99, 102, 241, 0.2) !important;
+    border-radius: 18px !important;
+    background: linear-gradient(145deg, rgba(15, 20, 55, 0.9), rgba(9, 12, 35, 0.95)) !important;
+}
+
+.uptime-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 14px 18px 8px;
+}
+
+.uptime-status-dot {
+    width: 9px;
+    height: 9px;
+    background: #10b981;
+    border-radius: 50%;
+    display: inline-block;
+    box-shadow: 0 0 8px #10b981;
+    animation: pulse-green 2s infinite;
+}
+
+@keyframes pulse-green {
+
+    0%,
+    100% {
+        box-shadow: 0 0 6px #10b981;
+    }
+
+    50% {
+        box-shadow: 0 0 14px #10b981;
+    }
+}
+
+.uptime-online-label {
+    font-size: 12px;
+    font-weight: 600;
+    color: #10b981;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.uptime-server-name {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 4px 18px 16px;
+    font-size: 20px;
+    font-weight: 700;
+    color: var(--text-primary);
+    border-bottom: 1px solid rgba(99, 102, 241, 0.1);
+}
+
+.uptime-server-icon {
+    font-size: 22px;
+}
+
+.uptime-metrics {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 0;
+}
+
+.uptime-metric {
+    text-align: center;
+    padding: 18px 10px;
+    border-right: 1px solid rgba(99, 102, 241, 0.1);
+}
+
+.uptime-metric:last-child {
+    border-right: none;
+}
+
+.uptime-value {
+    font-size: 28px;
+    font-weight: 800;
+    font-family: var(--font-mono);
+    color: var(--accent-light);
+    line-height: 1;
+}
+
+.uptime-label {
+    font-size: 10px;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    margin-top: 5px;
+}
+
+.uptime-footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 18px;
+    background: rgba(99, 102, 241, 0.05);
+    border-top: 1px solid rgba(99, 102, 241, 0.1);
+}
+
+.uptime-footer-label {
+    font-size: 11px;
+    color: var(--text-muted);
+}
+
+.uptime-footer-value {
+    font-size: 11px;
+    font-family: var(--font-mono);
+    color: var(--text-secondary);
+}
+
+/* ============================================================
    INSTANCE MONITOR DASHBOARD
    ============================================================ */
 .monitor-dashboard {

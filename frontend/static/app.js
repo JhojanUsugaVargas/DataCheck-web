@@ -182,6 +182,10 @@ function renderResponse(data) {
             renderTempDBMonitor(data.title, data.data);
             break;
 
+        case 'server_uptime':
+            renderServerUptime(data.title, data.data);
+            break;
+
         case 'ai':
             addBotMessage(data.message, null, data.source);
             break;
@@ -294,6 +298,61 @@ function renderTable(title, data) {
     html += '</tbody></table>';
 
     content.innerHTML = html;
+    msgEl.appendChild(avatar);
+    msgEl.appendChild(content);
+    container.appendChild(msgEl);
+    scrollToBottom();
+}
+
+// ── Render Server Uptime (Premium Cards) ──
+function renderServerUptime(title, data) {
+    const container = document.getElementById('chatMessages');
+    clearWelcome();
+
+    const msgEl = document.createElement('div');
+    msgEl.className = 'message bot';
+
+    const avatar = document.createElement('div');
+    avatar.className = 'msg-avatar';
+    avatar.textContent = '🤖';
+
+    const content = document.createElement('div');
+    content.className = 'msg-content uptime-card';
+
+    const hoursRemaining = data.horas_activo % 24;
+    const uptimeLabel = data.dias_activo > 0
+        ? `${data.dias_activo} días ${hoursRemaining} hrs`
+        : `${data.horas_activo} horas`;
+
+    content.innerHTML = `
+        <div class="uptime-header">
+            <span class="uptime-status-dot"></span>
+            <span class="uptime-online-label">✅ En Línea</span>
+        </div>
+        <div class="uptime-server-name">
+            <span class="uptime-server-icon">🖥️</span>
+            <span>${data.servidor}</span>
+        </div>
+        <div class="uptime-metrics">
+            <div class="uptime-metric">
+                <div class="uptime-value">${data.dias_activo}</div>
+                <div class="uptime-label">Días Activo</div>
+            </div>
+            <div class="uptime-metric">
+                <div class="uptime-value">${hoursRemaining}</div>
+                <div class="uptime-label">Horas Restantes</div>
+            </div>
+            <div class="uptime-metric">
+                <div class="uptime-value">${data.horas_activo}</div>
+                <div class="uptime-label">Horas Totales</div>
+            </div>
+        </div>
+        <div class="uptime-footer">
+            <span class="uptime-footer-label">⏰ Inicio del Servicio</span>
+            <span class="uptime-footer-value">${data.fecha_inicio.split('.')[0]}</span>
+        </div>
+    `;
+
     msgEl.appendChild(avatar);
     msgEl.appendChild(content);
     container.appendChild(msgEl);

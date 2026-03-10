@@ -23,22 +23,45 @@ def get_active_conn():
 @dba_bp.route('/api/status')
 @login_required
 def action_status():
-    """Verifica el estado de SQL Server y retorna el nombre del servidor."""
+    """Verifica el estado de SQL Server y retorna nombre e información de uptime."""
     conn = get_active_conn()
-    if conn:
-        try:
-            cursor = conn.cursor()
-            cursor.execute("SELECT @@SERVERNAME")
-            server_name = cursor.fetchone()[0]
-            conn.close()
-            return jsonify({
-                'type': 'success', 
-                'message': f'✅ El servicio de SQL Server (**{server_name}**) está **en línea**.'
-            })
-        except Exception as e:
-            if conn: conn.close()
-            return jsonify({'type': 'error', 'message': f'❌ Error al consultar servidor: {str(e)}'})
-    return jsonify({'type': 'error', 'message': '❌ El servicio de SQL Server **no está disponible**.'})
+    if not conn:
+        return jsonify({'type': 'error', 'message': '❌ El servicio de SQL Server **no está disponible**.'})
+
+    try:
+        cursor = conn.cursor()
+        cursor.execute("""
+            SELECT 
+                @@SERVERNAME AS Servidor,
+                sqlserver_start_time AS FechaInicioSQLServer,
+                DATEDIFF(HOUR, sqlserver_start_time, GETDATE()) AS HorasActivo,
+                DATEDIFF(DAY, sqlserver_start_time, GETDATE()) AS DiasActivo
+            FROM sys.dm_os_sys_info
+        """)
+        row = cursor.fetchone()
+        conn.close()
+
+        if not row:
+            return jsonify({'type': 'error', 'message': '❌ No se pudo obtener el estado del servidor.'})
+
+        servidor = str(row[0])
+        fecha_inicio = str(row[1]) if row[1] else 'N/A'
+        horas_activo = int(row[2]) if row[2] is not None else 0
+        dias_activo = int(row[3]) if row[3] is not None else 0
+
+        return jsonify({
+            'type': 'server_uptime',
+            'title': '📊 Estado SQL Server',
+            'data': {
+                'servidor': servidor,
+                'fecha_inicio': fecha_inicio,
+                'horas_activo': horas_activo,
+                'dias_activo': dias_activo,
+            }
+        })
+    except Exception as e:
+        if conn: conn.close()
+        return jsonify({'type': 'error', 'message': f'❌ Error al consultar servidor: {str(e)}'})
 
 @dba_bp.route('/api/bloqueos')
 @login_required
