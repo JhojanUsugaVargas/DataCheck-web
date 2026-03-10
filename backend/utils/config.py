@@ -29,6 +29,9 @@ ENCRYPTED_AI_CONN_STR = os.environ.get('ENCRYPTED_AI_CONN_STR', "").encode()
 RECAPTCHA_SITE_KEY = os.environ.get('RECAPTCHA_SITE_KEY')
 RECAPTCHA_SECRET_KEY = os.environ.get('RECAPTCHA_SECRET_KEY')
 
+# === App Version ===
+APP_VERSION = "Development v1.0.0"
+
 
 fernet = Fernet(FERNET_KEY)
 CONN_STR = fernet.decrypt(ENCRYPTED_CONN_STR).decode()

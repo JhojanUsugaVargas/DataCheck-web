@@ -6,13 +6,14 @@ import os
 import logging
 from flask import Flask, render_template, session, redirect, url_for, jsonify, request
 from werkzeug.middleware.proxy_fix import ProxyFix
-from utils.config import SECRET_KEY, get_db_connection, get_available_contracts, get_instances_by_contract
+from utils.config import SECRET_KEY, get_db_connection, get_available_contracts, get_instances_by_contract, APP_VERSION
 
 # Import Blueprints
 from blueprints.auth_bp import auth_bp
 from blueprints.admin_bp import admin_bp
 from blueprints.dba_bp import dba_bp
 from blueprints.chat_bp import chat_bp
+from blueprints.feedback_bp import feedback_bp
 from utils.decorators import login_required, role_required
 
 app = Flask(__name__, 
@@ -30,6 +31,7 @@ app.register_blueprint(auth_bp)
 app.register_blueprint(admin_bp)
 app.register_blueprint(dba_bp)
 app.register_blueprint(chat_bp)
+app.register_blueprint(feedback_bp)
 
 # Logging configuration
 logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
@@ -47,7 +49,7 @@ def inject_global_vars():
     # Extraer la variable de entorno, si no existe o termina en slash, la limpia
     base_url = os.environ.get('APP_BASE_URL', '').rstrip('/')
     recaptcha_enabled = os.environ.get('RECAPTCHA_ENABLED', 'true').lower()
-    return dict(APP_BASE_URL=base_url, RECAPTCHA_ENABLED=recaptcha_enabled)
+    return dict(APP_BASE_URL=base_url, RECAPTCHA_ENABLED=recaptcha_enabled, APP_VERSION=APP_VERSION)
 
 # ============================================================
 #  MAIN ROUTES (General)
@@ -81,7 +83,8 @@ def index():
                            contracts=contracts,
                            instances=available_instances,
                            current_contract_id=current_contract_id,
-                           current_instance_id=current_instance_id)
+                           current_instance_id=current_instance_id,
+                           mfa_enabled=session.get('mfa_enabled', False))
 
 @app.route('/api/instances')
 @login_required

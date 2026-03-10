@@ -11,12 +11,14 @@ chat_bp = Blueprint('chat', __name__)
 def api_chat():
     """Procesa un mensaje del usuario y devuelve la respuesta apropiada."""
     data = request.get_json()
-    user_message = data.get('message', '').strip()
+    user_message = data.get('message', '')
+    if isinstance(user_message, str):
+        user_message = user_message.strip()
     action = data.get('action', '').strip()
 
     if not action:
         # Detección de palabras clave para acciones rápidas
-        msg_low = user_message.lower()
+        msg_low = user_message.lower() if isinstance(user_message, str) else ""
         if "compactar tempdb" in msg_low or "shrink tempdb" in msg_low:
             action = "tempdb_shrink"
 
@@ -40,10 +42,8 @@ def handle_action_dispatcher(action, extra_data=''):
     # En una implementación real, dispararíamos las funciones de dba_bp directamente o vía API interna.
     # Para mantener simplicidad, el dispatcher sabe qué acción llamar.
     
-    from blueprints.dba_bp import (
-        action_status, action_bloqueos, action_cpu, action_whoisactive, 
         action_discos, action_tempdb, action_performance, action_datalog, 
-        action_cancelar, action_tempdb_shrink
+        action_cancelar, action_tempdb_shrink, action_jobs, action_alwayson
     )
     
     handlers = {
@@ -57,6 +57,8 @@ def handle_action_dispatcher(action, extra_data=''):
         'performance': lambda: action_performance().get_json(),
         'datalog': lambda: action_datalog().get_json(),
         'cancelar': lambda: action_cancelar().get_json(),
+        'jobs': lambda: action_jobs().get_json(),
+        'alwayson': lambda: action_alwayson().get_json(),
     }
     
     handler = handlers.get(action)

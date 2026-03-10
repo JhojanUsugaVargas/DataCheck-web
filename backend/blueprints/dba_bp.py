@@ -5,6 +5,9 @@ from utils.decorators import login_required, role_required
 from services.dba_queries.disk_space import query_disk_space, query_disk_space_summary
 from services.dba_queries.database_sizes import query_database_sizes
 from services.dba_queries.instance_monitor import query_instance_monitor
+from services.dba_queries.tempdb_monitor import query_tempdb_usage
+from services.dba_queries.job_monitor import query_job_monitor
+from services.dba_queries.alwayson_monitor import query_alwayson_status
 import re
 
 dba_bp = Blueprint('dba', __name__)
@@ -52,7 +55,7 @@ def action_bloqueos():
             SELECT TOP 5 
                 login_name, session_id, LEFT(text, 100) AS query_preview,
                 total_elapsed_time / 1000 AS segundos_ejecucion, Fecha
-            FROM DataCheck.dbo.Deadlocks_Tab
+            FROM Deadlocks_Tab
             ORDER BY Fecha DESC
         """)
         rows = cursor.fetchall()
@@ -93,7 +96,7 @@ def action_cpu():
 
         return jsonify({
             'type': 'instance_monitor',
-            'title': '⚙️ Monitor Rápido de Instancia',
+            'title': '⚙️ Monitor de Salud de Instancia',
             'data': data
         })
     except Exception as e:
@@ -172,7 +175,7 @@ def action_discos():
         if not discos:
             return jsonify({'type': 'success', 'message': 'No se encontró información de espacio en disco.'})
 
-        return jsonify({'type': 'table', 'title': '💾 Espacio en Discos', 'data': discos})
+        return jsonify({'type': 'disk_monitor', 'title': '💾 Espacio en Discos', 'data': discos})
     except Exception as e:
         if conn: conn.close()
         return jsonify({'type': 'error', 'message': f'❌ Error: {str(e)}'})
@@ -193,7 +196,7 @@ def action_datalog():
         if not datos:
             return jsonify({'type': 'success', 'message': 'No se encontró información.'})
 
-        return jsonify({'type': 'table', 'title': '🕵️‍♂️ Data y Log', 'data': datos})
+        return jsonify({'type': 'datalog_monitor', 'title': '🕵️‍♂️ Validación de Data y Log', 'data': datos})
     except Exception as e:
         if conn: conn.close()
         return jsonify({'type': 'error', 'message': f'❌ Error: {str(e)}'})
@@ -209,33 +212,64 @@ def action_tempdb():
 
     try:
         cursor = conn.cursor()
-        cursor.execute("""
-            SELECT name, physical_name, size * 8 / 1024 AS sizeMB
-            FROM sys.master_files
-            WHERE database_id = DB_ID('tempdb')
-        """)
-        rows = cursor.fetchall()
+        data = query_tempdb_usage(cursor)
         conn.close()
 
-        if not rows:
+        if not data:
             return jsonify({'type': 'success', 'message': 'No se encontró información de TempDB.'})
 
-        total_mb = sum(row[2] for row in rows)
-        archivos = []
-        for row in rows:
-            archivos.append({
-                'nombre': str(row[0]),
-                'ruta': str(row[1]),
-                'tamaño_mb': str(row[2])
-            })
         return jsonify({
-            'type': 'table',
-            'title': f'🧹 TempDB — Total: {total_mb} MB',
-            'data': archivos
+            'type': 'tempdb_monitor',
+            'title': '🧹 Monitor de TempDB',
+            'data': data
         })
     except Exception as e:
         if conn: conn.close()
         return jsonify({'type': 'error', 'message': f'❌ Error: {str(e)}'})
+
+@dba_bp.route('/api/jobs')
+@login_required
+def action_jobs():
+    """Consulta el historial de Jobs."""
+    conn = get_active_conn()
+    if not conn:
+        return jsonify({'type': 'error', 'message': '❌ Error al conectar a la base de datos.'})
+
+    try:
+        cursor = conn.cursor()
+        data = query_job_monitor(cursor)
+        conn.close()
+
+        if not data:
+            return jsonify({'type': 'success', 'message': '✅ No se encontraron ejecuciones de jobs en las últimas 24 horas.'})
+
+        return jsonify({
+            'type': 'table',
+            'title': '📋 Validación de Jobs (Últimas 24h)',
+            'data': data
+        })
+    except Exception as e:
+        if conn: conn.close()
+        return jsonify({'type': 'error', 'message': f'❌ Error al consultar jobs: {str(e)}'})
+
+@dba_bp.route('/api/alwayson')
+@login_required
+def action_alwayson():
+    """Consulta el estado de Always On Availability Groups."""
+    conn = get_active_conn()
+    if not conn:
+        return jsonify({'type': 'error', 'message': '❌ Error al conectar a la base de datos.'})
+
+    try:
+        cursor = conn.cursor()
+        data = query_alwayson_status(cursor)
+        conn.close()
+
+        # query_alwayson_status ya devuelve el diccionario formateado
+        return jsonify(data)
+    except Exception as e:
+        if conn: conn.close()
+        return jsonify({'type': 'error', 'message': f'❌ Error al consultar Always On: {str(e)}'})
 
 @dba_bp.route('/api/tempdb/shrink')
 @login_required
@@ -284,9 +318,11 @@ def action_performance():
         cpu_row = cursor.fetchone()
         cpu_val = cpu_row[0] if cpu_row else "N/A"
 
-        # 3. Memoria Remote (SQL)
+        # 3. Memoria Remote (OS)
         mem_query = """
-            SELECT total_physical_memory_kb/1024/1024, available_physical_memory_kb/1024/1024 
+            SELECT 
+                total_physical_memory_kb / 1048576.0 AS TotalGB, 
+                available_physical_memory_kb / 1048576.0 AS AvailGB 
             FROM sys.dm_os_sys_memory
         """
         cursor.execute(mem_query)
@@ -295,7 +331,7 @@ def action_performance():
             total_gb = round(float(mem_row[0]), 1)
             avail_gb = round(float(mem_row[1]), 1)
             used_gb = round(total_gb - avail_gb, 1)
-            mem_pct = round((used_gb / total_gb) * 100, 1) if total_gb > 0 else 0
+            mem_pct = round((used_gb * 100.0 / total_gb), 1) if total_gb > 0 else 0
             mem_info = f"{mem_pct}% usada ({used_gb} / {total_gb} GB)"
         else:
             mem_info = "N/A"

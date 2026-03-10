@@ -35,10 +35,14 @@ def query_instance_monitor(cursor):
         ) x
         ORDER BY record.value('(./Record/@id)[1]', 'int') DESC;
 
-        -- Memoria máxima configurada
-        SELECT @MaxMemoryMB = CONVERT(INT, value_in_use)
-        FROM sys.configurations
-        WHERE name = 'max server memory (MB)';
+        DECLARE @TotalPhysicalMB INT
+        DECLARE @AvailablePhysicalMB INT
+
+        -- Memoria física del servidor (OS)
+        SELECT 
+            @TotalPhysicalMB = total_physical_memory_kb / 1024,
+            @AvailablePhysicalMB = available_physical_memory_kb / 1024
+        FROM sys.dm_os_sys_memory;
 
         SELECT
             GETDATE() AS Fecha,
@@ -48,11 +52,11 @@ def query_instance_monitor(cursor):
             @SystemIdle AS CPU_Libre_Servidor,
             (100 - @SQL_CPU - @SystemIdle) AS CPU_Otros_Procesos,
 
-            -- Memoria
-            pm.physical_memory_in_use_kb / 1024 AS SQL_Memory_Usada_MB,
-            @MaxMemoryMB AS SQL_Max_Memory_MB,
-            @MaxMemoryMB - (pm.physical_memory_in_use_kb / 1024) AS SQL_Memory_Libre_MB,
-            ((pm.physical_memory_in_use_kb / 1024.0) / @MaxMemoryMB) * 100 AS SQL_Memory_Usage_Percent,
+            -- Memoria (Base: Memoria Física Total del Servidor)
+            (pm.physical_memory_in_use_kb / 1024) AS SQL_Memory_Usada_MB,
+            @TotalPhysicalMB AS Server_Total_Memory_MB,
+            @AvailablePhysicalMB AS Server_Memory_Libre_MB,
+            ((@TotalPhysicalMB - @AvailablePhysicalMB) * 100.0 / @TotalPhysicalMB) AS OS_Memory_Usage_Percent,
 
             -- Actividad
             (SELECT COUNT(*) FROM sys.dm_exec_sessions WHERE status = 'running') AS Sesiones_Ejecutando,
@@ -76,8 +80,8 @@ def query_instance_monitor(cursor):
             'cpu_idle': int(row[2]) if row[2] is not None else 0,
             'cpu_other': int(row[3]) if row[3] is not None else 0,
             'sql_mem_used_mb': int(row[4]) if row[4] is not None else 0,
-            'sql_max_mem_mb': int(row[5]) if row[5] is not None else 0,
-            'sql_mem_free_mb': int(row[6]) if row[6] is not None else 0,
+            'sql_max_mem_mb': int(row[5]) if row[5] is not None else 0, # Ahora representa Memoria Total del Servidor
+            'sql_mem_free_mb': int(row[6]) if row[6] is not None else 0, # Ahora representa Memoria Libre del Servidor
             'sql_mem_usage_percent': round(float(row[7]), 1) if row[7] is not None else 0,
             'sessions_running': int(row[8]) if row[8] is not None else 0,
             'sessions_user': int(row[9]) if row[9] is not None else 0,

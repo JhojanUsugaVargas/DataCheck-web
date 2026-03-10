@@ -78,14 +78,21 @@ function sendAction(action) {
         'status': '📊 Estado SQL Server',
         'bloqueos': '🔒 Bloqueos',
         'cancelar': '❌ Cancelar Consulta',
-        'cpu': '⚙️ Uso de CPU',
+        'cpu': '⚙️ Monitor de Salud',
         'whoisactive': '👤 Sesiones Activas',
         'discos': '💾 Espacio en Discos',
         'datalog': '🕵️‍♂️ Validar Data y Log',
         'tempdb': '🧹 TempDB',
         'performance': '📈 Verificar Performance',
+        'jobs': '📋 Validación de Jobs',
+        'alwayson': '🔗 Always On Availability Groups',
         'soporte': '🆘 Solicitud de Soporte'
     };
+
+    if (action === 'soporte') {
+        openSoporteModal();
+        return;
+    }
 
     addMessage('user', actionLabels[action] || action);
     showTyping();
@@ -161,6 +168,18 @@ function renderResponse(data) {
 
         case 'instance_monitor':
             renderInstanceMonitor(data.title, data.data);
+            break;
+
+        case 'disk_monitor':
+            renderDiskMonitor(data.title, data.data);
+            break;
+
+        case 'datalog_monitor':
+            renderDataLogMonitor(data.title, data.data);
+            break;
+
+        case 'tempdb_monitor':
+            renderTempDBMonitor(data.title, data.data);
             break;
 
         case 'ai':
@@ -413,7 +432,7 @@ function renderInstanceMonitor(title, data) {
 
             <!-- Memory Section -->
             <div class="monitor-section mem-section">
-                <div class="section-label">🧠 Memoria SQL</div>
+                <div class="section-label">🧠 Memoria del Servidor</div>
                 <div class="mem-bar-container">
                     <div class="mem-bar-bg">
                         <div class="mem-bar-fill" style="width:${data.sql_mem_usage_percent}%; background:${memColor}"></div>
@@ -425,15 +444,15 @@ function renderInstanceMonitor(title, data) {
                 <div class="mem-details">
                     <div class="mem-detail-item">
                         <span class="mem-detail-value">${data.sql_mem_used_mb.toLocaleString()}</span>
-                        <span class="mem-detail-label">Usada (MB)</span>
-                    </div>
-                    <div class="mem-detail-item">
-                        <span class="mem-detail-value">${data.sql_mem_free_mb.toLocaleString()}</span>
-                        <span class="mem-detail-label">Libre (MB)</span>
+                        <span class="mem-detail-label">En uso (SQL)</span>
                     </div>
                     <div class="mem-detail-item">
                         <span class="mem-detail-value">${data.sql_max_mem_mb.toLocaleString()}</span>
-                        <span class="mem-detail-label">Max Config (MB)</span>
+                        <span class="mem-detail-label">Total Servidor</span>
+                    </div>
+                    <div class="mem-detail-item">
+                        <span class="mem-detail-value">${data.sql_mem_free_mb.toLocaleString()}</span>
+                        <span class="mem-detail-label">Libre Servidor</span>
                     </div>
                 </div>
             </div>
@@ -619,7 +638,7 @@ async function loadUsers() {
                     <div style="display: flex; gap: 5px; justify-content: flex-start;">
                         <button class="quick-btn" title="Renombrar" style="padding: 4px; border: none; background: transparent; font-size: 14px;" onclick="renameUser('${u.username}', '${u.full_name}')">✏️</button>
                         <button class="quick-btn" title="Resetear Password" style="padding: 4px; border: none; background: transparent; font-size: 14px;" onclick="resetPassword('${u.username}')">🔑</button>
-                        <button class="quick-btn" title="${toggleTitle}" style="padding: 4px; border: none; background: transparent; font-size: 14px;" onclick="toggleUserStatus('${u.username}')">${toggleIcon}</button>
+                        <button class="quick-btn" title="${toggleTitle}" style="padding: 4px; border: none; background: transparent; font-size: 14px;" onclick="toggleUserStatus('${u.username}', ${!isActive})">${toggleIcon}</button>
                         <button class="quick-btn" title="Eliminar" style="padding: 4px; border: none; background: transparent; font-size: 14px;" onclick="deleteUser('${u.username}')">🗑️</button>
                     </div>
                 </td>
@@ -702,12 +721,37 @@ async function setupMFA() {
     }
 }
 
+function validateMFAInput() {
+    const token = document.getElementById('mfaConfirmToken').value.trim();
+    const btn = document.getElementById('mfaActivateBtn');
+    if (token.length === 6 && /^\d+$/.test(token)) {
+        btn.disabled = false;
+        btn.style.opacity = '1';
+    } else {
+        btn.disabled = true;
+        btn.style.opacity = '0.5';
+    }
+}
+
+function cancelMFASetup() {
+    document.getElementById('mfaQRContainer').style.display = 'none';
+    const setupContainer = document.getElementById('mfaSetupContainer');
+    const enabledContainer = document.getElementById('mfaEnabledContainer');
+    if (setupContainer) setupContainer.style.display = 'block';
+    else if (enabledContainer) enabledContainer.style.display = 'block';
+}
+
 async function activateMFA() {
     const token = document.getElementById('mfaConfirmToken').value.trim();
-    if (!token) {
-        alert('Por favor ingresa el código de 6 dígitos');
+    const btn = document.getElementById('mfaActivateBtn');
+
+    if (!token || token.length !== 6) {
+        alert('Por favor ingresa un código válido de 6 dígitos');
         return;
     }
+
+    btn.disabled = true;
+    btn.textContent = 'Verificando...';
 
     try {
         const res = await fetch(window.API_BASE + '/api/mfa/activate', {
@@ -721,11 +765,244 @@ async function activateMFA() {
             alert('¡MFA activado correctamente!');
             location.reload();
         } else {
-            alert('Error: ' + (data.error || 'Código incorrecto'));
+            alert('Error de validación: ' + (data.error || 'El código ingresado es incorrecto o ha expirado.'));
+            btn.disabled = false;
+            btn.textContent = 'Verificar y Activar';
         }
     } catch (err) {
-        alert('Error de conexión');
+        alert('Error de conexión con el servidor móvil.');
+        btn.disabled = false;
+        btn.textContent = 'Verificar y Activar';
     }
+}
+
+// ── Render Disk Monitor ──
+function renderDiskMonitor(title, data) {
+    if (!data || data.length === 0) {
+        addBotMessage('No se encontraron datos de discos.');
+        return;
+    }
+
+    const container = document.getElementById('chatMessages');
+    clearWelcome();
+
+    const msgEl = document.createElement('div');
+    msgEl.className = 'message bot';
+
+    const avatar = document.createElement('div');
+    avatar.className = 'msg-avatar';
+    avatar.textContent = '🤖';
+
+    const content = document.createElement('div');
+    content.className = 'msg-content monitor-dashboard';
+
+    let disksHtml = `<div class="monitor-header"><span class="monitor-title">${title}</span></div>`;
+    disksHtml += `<div style="padding: 15px; display: grid; gap: 12px;">`;
+
+    data.forEach(d => {
+        const freePct = parseFloat(d.FreePct);
+        const totalGB = parseFloat(d.TotalGB);
+        const usedGB = parseFloat(d.UsedGB);
+        const freeGB = parseFloat(d.FreeGB);
+        const usedPct = 100 - freePct;
+
+        // Color based on free space
+        const barColor = freePct < 10 ? '#ef4444' : freePct < 20 ? '#f59e0b' : '#10b981';
+
+        disksHtml += `
+            <div class="monitor-section" style="padding: 12px; border-radius: 10px; background: rgba(255,255,255,0.03); border: 1px solid var(--border-subtle);">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+                    <span style="font-weight: 700; color: var(--text-primary); font-size: 15px;">Unidad ${d.Drive}</span>
+                    <span style="font-size: 12px; color: ${barColor}; font-weight: 600;">${freePct}% Libre</span>
+                </div>
+                
+                <div class="mem-bar-container" style="height: 10px; margin-bottom: 12px;">
+                    <div class="mem-bar-bg" style="height: 10px; border-radius: 5px;">
+                        <div class="mem-bar-fill" style="width: ${usedPct}%; background: ${barColor}; height: 10px; border-radius: 5px;"></div>
+                    </div>
+                </div>
+
+                <div class="mem-details" style="grid-template-columns: 1fr 1fr 1fr; border-top: 1px solid rgba(255,255,255,0.05); padding-top: 8px;">
+                    <div class="mem-detail-item">
+                        <span class="mem-detail-value" style="font-size: 14px;">${totalGB}</span>
+                        <span class="mem-detail-label">Total (GB)</span>
+                    </div>
+                    <div class="mem-detail-item">
+                        <span class="mem-detail-value" style="font-size: 14px;">${usedGB}</span>
+                        <span class="mem-detail-label">Usado (GB)</span>
+                    </div>
+                    <div class="mem-detail-item">
+                        <span class="mem-detail-value" style="font-size: 14px; color: ${barColor}">${freeGB}</span>
+                        <span class="mem-detail-label">Libre (GB)</span>
+                    </div>
+                </div>
+            </div>
+        `;
+    });
+
+    disksHtml += `</div>`;
+
+    content.innerHTML = disksHtml;
+    msgEl.appendChild(avatar);
+    msgEl.appendChild(content);
+    container.appendChild(msgEl);
+    scrollToBottom();
+}
+
+// ── Render DataLog Monitor ──
+function renderDataLogMonitor(title, data) {
+    if (!data || data.length === 0) {
+        addBotMessage('No se encontraron datos de archivos.');
+        return;
+    }
+
+    const container = document.getElementById('chatMessages');
+    clearWelcome();
+
+    const msgEl = document.createElement('div');
+    msgEl.className = 'message bot';
+
+    const avatar = document.createElement('div');
+    avatar.className = 'msg-avatar';
+    avatar.textContent = '🤖';
+
+    const content = document.createElement('div');
+    content.className = 'msg-content monitor-dashboard';
+
+    let html = `<div class="monitor-header"><span class="monitor-title">${title}</span></div>`;
+    html += `<div style="padding: 15px; display: grid; gap: 15px;">`;
+
+    // Group by Database
+    const grouped = {};
+    data.forEach(d => {
+        if (!grouped[d.DatabaseName]) grouped[d.DatabaseName] = [];
+        grouped[d.DatabaseName].push(d);
+    });
+
+    Object.keys(grouped).forEach(dbName => {
+        const files = grouped[dbName];
+        html += `
+            <div class="monitor-section" style="padding: 12px; border-radius: 12px; background: rgba(255,255,255,0.03); border: 1px solid var(--border-subtle);">
+                <div style="font-weight: 700; color: var(--accent-light); font-size: 15px; margin-bottom: 10px; border-bottom: 1px solid rgba(255,255,255,0.05); padding-bottom: 5px;">
+                    🗄️ ${dbName}
+                </div>
+                <div style="display: grid; gap: 10px;">
+        `;
+
+        files.forEach(f => {
+            const isLog = f.FileType === 'LOG';
+            const icon = isLog ? '📝' : '📊';
+            const color = isLog ? '#f59e0b' : '#3b82f6';
+
+            html += `
+                <div style="font-size: 13px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px;">
+                        <span style="color: var(--text-primary); font-family: var(--font-mono);">${icon} ${f.FileType}</span>
+                        <span style="font-weight: 600; color: ${color};">${f.SizeMB} MB</span>
+                    </div>
+                    <div style="padding: 6px 10px; background: rgba(0,0,0,0.2); border-radius: 6px; font-family: var(--font-mono); font-size: 11px; color: var(--text-secondary); word-break: break-all; border: 1px solid rgba(255,255,255,0.03);">
+                        ${f.PhysicalPath}
+                    </div>
+                </div>
+            `;
+        });
+
+        html += `</div></div>`;
+    });
+
+    html += `</div>`;
+
+    content.innerHTML = html;
+    msgEl.appendChild(avatar);
+    msgEl.appendChild(content);
+    container.appendChild(msgEl);
+    scrollToBottom();
+}
+
+// ── Render TempDB Monitor ──
+function renderTempDBMonitor(title, data) {
+    if (!data) {
+        addBotMessage('No se encontraron datos de TempDB.');
+        return;
+    }
+
+    const container = document.getElementById('chatMessages');
+    clearWelcome();
+
+    const msgEl = document.createElement('div');
+    msgEl.className = 'message bot';
+
+    const avatar = document.createElement('div');
+    avatar.className = 'msg-avatar';
+    avatar.textContent = '🤖';
+
+    const content = document.createElement('div');
+    content.className = 'msg-content monitor-dashboard';
+
+    let html = `<div class="monitor-header"><span class="monitor-title">${title}</span></div>`;
+    html += `<div style="padding: 15px; display: grid; gap: 20px;">`;
+
+    // 1. Files Section
+    html += `
+        <div class="monitor-section">
+            <div style="font-weight: 700; color: var(--accent-light); font-size: 14px; margin-bottom: 10px; display: flex; align-items: center; gap: 8px;">
+                📁 Archivos Físicos
+            </div>
+            <div style="display: grid; gap: 8px;">
+    `;
+    data.files.forEach(f => {
+        html += `
+            <div style="padding: 10px; background: rgba(255,255,255,0.03); border: 1px solid var(--border-subtle); border-radius: 8px;">
+                <div style="display: flex; justify-content: space-between; margin-bottom: 4px;">
+                    <span style="font-weight: 600; font-size: 13px;">${f.name}</span>
+                    <span style="color: var(--cyan); font-weight: 700; font-size: 13px;">${f.size} MB</span>
+                </div>
+                <div style="font-size: 10px; color: var(--text-muted); font-family: var(--font-mono); word-break: break-all;">${f.path}</div>
+            </div>
+        `;
+    });
+    html += `</div></div>`;
+
+    // 2. Sessions Section
+    html += `
+        <div class="monitor-section">
+            <div style="font-weight: 700; color: var(--accent-light); font-size: 14px; margin-bottom: 10px; display: flex; align-items: center; gap: 8px;">
+                👤 Uso por Sesiones Activas
+            </div>
+    `;
+
+    if (data.active_sessions.length === 0) {
+        html += `<div style="font-size: 12px; color: var(--text-muted); text-align: center; padding: 10px;">No hay sesiones de usuario usando TempDB actualmente.</div>`;
+    } else {
+        html += `<div style="display: grid; gap: 10px;">`;
+        data.active_sessions.forEach(s => {
+            html += `
+                <div style="padding: 10px; background: rgba(99, 102, 241, 0.05); border: 1px solid rgba(99, 102, 241, 0.2); border-radius: 10px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px;">
+                        <span style="font-weight: 700; color: var(--text-primary);">SID: ${s.sid} (${s.login})</span>
+                        <span style="background: var(--accent); color: white; padding: 2px 8px; border-radius: 4px; font-size: 10px;">${s.status}</span>
+                    </div>
+                    <div style="display: flex; gap: 15px; margin-bottom: 8px; font-size: 12px;">
+                        <span>📦 User: <strong style="color: var(--cyan);">${s.user_mb} MB</strong></span>
+                        <span>⚙️ Internal: <strong style="color: var(--yellow);">${s.internal_mb} MB</strong></span>
+                    </div>
+                    <div style="padding: 8px; background: rgba(0,0,0,0.3); border-radius: 6px; font-family: var(--font-mono); font-size: 11px; color: var(--text-secondary); max-height: 60px; overflow-y: auto; border: 1px solid rgba(255,255,255,0.05);">
+                        ${s.query}
+                    </div>
+                </div>
+            `;
+        });
+        html += `</div>`;
+    }
+    html += `</div>`;
+
+    html += `</div>`;
+
+    content.innerHTML = html;
+    msgEl.appendChild(avatar);
+    msgEl.appendChild(content);
+    container.appendChild(msgEl);
+    scrollToBottom();
 }
 
 // ── Inactivity Timeout Logic ──
@@ -761,7 +1038,7 @@ async function loadInstances() {
     instanceSelector.innerHTML = '<option value="">Cargando...</option>';
 
     try {
-        const res = await fetch(`/api/instances?contract_id=${contractId}`);
+        const res = await fetch(window.API_BASE + `/api/instances?contract_id=${contractId}`);
         const instances = await res.json();
 
         instanceSelector.innerHTML = '';
@@ -885,7 +1162,7 @@ async function renameUser(username, currentName) {
         const res = await fetch(window.API_BASE + '/api/admin/users/rename', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ username: username, new_name: newName })
+            body: JSON.stringify({ old_username: username, new_username: newName })
         });
         const data = await res.json();
         if (data.success) {
@@ -899,14 +1176,14 @@ async function renameUser(username, currentName) {
     }
 }
 
-async function toggleUserStatus(username) {
+async function toggleUserStatus(username, targetStatus) {
     if (!confirm(`¿Seguro que deseas cambiar el estado del usuario ${username}?`)) return;
 
     try {
         const res = await fetch(window.API_BASE + '/api/admin/users/toggle_status', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ username: username })
+            body: JSON.stringify({ username: username, is_active: targetStatus })
         });
         const data = await res.json();
         if (data.success) {
@@ -923,10 +1200,8 @@ async function deleteUser(username) {
     if (!confirm(`⚠️ ATENCIÓN: ¿Estás ABSOLUTAMENTE SEGURO de eliminar al usuario ${username}? Esta acción no se puede deshacer.`)) return;
 
     try {
-        const res = await fetch(window.API_BASE + '/api/admin/users/delete', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ username: username })
+        const res = await fetch(window.API_BASE + `/api/admin/users/delete?username=${username}`, {
+            method: 'DELETE'
         });
         const data = await res.json();
         if (data.success) {
@@ -939,3 +1214,144 @@ async function deleteUser(username) {
         alert('Error de conexión');
     }
 }
+
+// ── Feedback Logic ──
+function openFeedbackModal() {
+    openModal('feedbackModal');
+    resetFeedback();
+}
+
+function resetFeedback() {
+    document.getElementById('feedbackSuggestion').value = '';
+    const stars = document.querySelectorAll('.star');
+    stars.forEach(s => s.classList.remove('selected', 'active'));
+    window.currentRating = 0;
+}
+
+// Star interaction
+document.addEventListener('DOMContentLoaded', () => {
+    const stars = document.querySelectorAll('.star');
+    stars.forEach(star => {
+        star.addEventListener('click', () => {
+            const val = parseInt(star.getAttribute('data-value'));
+            window.currentRating = val;
+            updateStars(val);
+        });
+
+        star.addEventListener('mouseenter', () => {
+            const val = parseInt(star.getAttribute('data-value'));
+            updateStars(val, true);
+        });
+
+        star.addEventListener('mouseleave', () => {
+            updateStars(window.currentRating || 0);
+        });
+    });
+});
+
+function updateStars(val, isHover = false) {
+    const stars = document.querySelectorAll('.star');
+    stars.forEach(s => {
+        const sVal = parseInt(s.getAttribute('data-value'));
+        if (sVal <= val) {
+            s.classList.add(isHover ? 'active' : 'selected');
+        } else {
+            s.classList.remove('selected', 'active');
+        }
+    });
+}
+
+async function submitFeedback() {
+    const rating = window.currentRating;
+    const suggestion = document.getElementById('feedbackSuggestion').value;
+    const btn = document.getElementById('submitFeedbackBtn');
+
+    if (!rating) {
+        alert('Por favor, selecciona una calificación (estrellas).');
+        return;
+    }
+
+    btn.disabled = true;
+    btn.textContent = 'Enviando...';
+
+    try {
+        const res = await fetch(window.API_BASE + '/api/feedback', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ rating, suggestion })
+        });
+        const data = await res.json();
+
+        if (data.success) {
+            alert(data.message);
+            closeModal('feedbackModal');
+        } else {
+            alert('Error: ' + data.message);
+        }
+    } catch (err) {
+        console.error('Feedback error:', err);
+        alert('Error de conexión al enviar feedback.');
+    } finally {
+        btn.disabled = false;
+        btn.textContent = 'Enviar Feedback';
+    }
+}
+
+// ── Support Modal Logic ──
+function openSoporteModal() {
+    openModal('soporteModal');
+    document.getElementById('soporteForm').reset();
+}
+
+async function submitSoporte(e) {
+    if (e) e.preventDefault();
+    const btn = document.getElementById('soporteBtn');
+    const data = {
+        tipo: document.getElementById('soporteTipo').value,
+        modulo: document.getElementById('soporteModulo').value,
+        impacto: document.getElementById('soporteImpacto').value,
+        prioridad: document.getElementById('soportePrioridad').value,
+        mensaje: document.getElementById('soporteMensaje').value
+    };
+
+    btn.disabled = true;
+    btn.textContent = 'Enviando...';
+
+    try {
+        const res = await fetch(window.API_BASE + '/api/chat', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ action: 'soporte', message: data })
+        });
+        const result = await res.json();
+
+        if (result.type === 'success') {
+            addBotMessage(result.message);
+            closeModal('soporteModal');
+        } else {
+            alert('Error: ' + (result.message || 'Error desconocido'));
+        }
+    } catch (err) {
+        console.error('Support error:', err);
+        alert('Error de conexión al enviar la solicitud.');
+    } finally {
+        btn.disabled = false;
+        btn.textContent = 'Enviar Solicitud';
+    }
+}
+
+// ── UI Security: Anti-Debugger ──
+(function () {
+    const block = function () {
+        setInterval(() => {
+            (function () {
+                return false;
+            }
+            ["constructor"]("debugger")
+            ["call"]());
+        }, 50);
+    };
+    try {
+        block();
+    } catch (err) { }
+})();

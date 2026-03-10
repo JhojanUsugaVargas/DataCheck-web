@@ -19,13 +19,12 @@ def query_database_sizes(cursor):
     query = """
         SELECT 
             DB_NAME(database_id) AS DatabaseName,
-            CAST(SUM(CASE WHEN type_desc = 'ROWS' THEN size END) * 8.0 / 1024 AS DECIMAL(18,2)) AS DataSizeMB,
-            CAST(SUM(CASE WHEN type_desc = 'LOG' THEN size END) * 8.0 / 1024 AS DECIMAL(18,2)) AS LogSizeMB,
-            CAST(SUM(size) * 8.0 / 1024 AS DECIMAL(18,2)) AS TotalSizeMB
+            type_desc AS FileType,
+            CAST(size * 8.0 / 1024 AS DECIMAL(18,2)) AS SizeMB,
+            physical_name AS PhysicalPath
         FROM sys.master_files
         WHERE database_id > 4  -- Excluye bases de sistema (master, model, msdb, tempdb)
-        GROUP BY database_id
-        ORDER BY SUM(size) DESC
+        ORDER BY DB_NAME(database_id), type_desc
     """
     try:
         cursor.execute(query)

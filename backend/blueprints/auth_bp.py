@@ -80,6 +80,7 @@ def api_login():
         session['role'] = (user_data['role'] or 'Monitor').strip()
         session['full_name'] = user_data['full_name']
         session['user_id'] = user_data['user_id']
+        session['mfa_enabled'] = user_data['mfa_enabled']
         return jsonify({'success': True, 'message': f'¡Bienvenido, {user_data["full_name"]}!'})
     
     return jsonify({'success': False, 'message': 'Credenciales incorrectas'}), 401
@@ -114,7 +115,7 @@ def update_profile():
         
         conn.commit()
         session['full_name'] = full_name
-        return jsonify({'success': True, 'message': 'Perfil actualizado correctamente'})
+        return jsonify({'success': True, 'message': 'Datos del perfil actualizados correctamente'})
     except Exception as e:
         return jsonify({'error': str(e)}), 500
     finally:
@@ -163,6 +164,7 @@ def mfa_activate():
             cursor = conn.cursor()
             cursor.execute("UPDATE Users SET MFASecret = ?, MFAEnabled = 1 WHERE Username = ?", (secret, username))
             conn.commit()
+            session['mfa_enabled'] = True
             session.pop('temp_mfa_secret', None)
             return jsonify({'success': True, 'message': 'MFA activado con éxito'})
         except Exception as e:

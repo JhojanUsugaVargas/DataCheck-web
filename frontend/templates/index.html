@@ -14,6 +14,18 @@
         window.API_BASE = "{{ APP_BASE_URL }}";
         window.currentContractId = "{{ current_contract_id }}";
         window.currentInstanceId = "{{ current_instance_id }}";
+
+        // Security Deterrents
+        document.oncontextmenu = (e) => e.preventDefault();
+        document.onkeydown = (e) => {
+            if (e.keyCode == 123 || // F12
+                (e.ctrlKey && e.shiftKey && (e.keyCode == 73 || e.keyCode == 74 || e.keyCode == 67)) || // Ctrl+Shift+I/J/C
+                (e.ctrlKey && (e.keyCode == 85 || e.keyCode == 83)) // Ctrl+U (Source) / Ctrl+S (Save)
+            ) {
+                e.preventDefault();
+                return false;
+            }
+        };
     </script>
 </head>
 
@@ -46,7 +58,7 @@
             <div style="display: flex; flex-direction: column; gap: 8px;">
                 <div style="display: flex; justify-content: space-between; align-items: center;">
                     <p class="sidebar-label" style="margin: 0;">Contrato</p>
-                    {% if role.lower() == 'administrador' or role.lower() == 'superadmin' %}
+                    {% if role.lower() in ['administrador', 'admin', 'superadmin'] %}
                     <button class="add-btn-sm" onclick="openAddContractModal()" title="Nuevo Contrato">+</button>
                     {% endif %}
                 </div>
@@ -60,7 +72,7 @@
 
                 <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 2px;">
                     <p class="sidebar-label" style="margin: 0;">Instancia</p>
-                    {% if role.lower() == 'administrador' or role.lower() == 'superadmin' %}
+                    {% if role.lower() in ['administrador', 'admin', 'superadmin'] %}
                     <button class="add-btn-sm" onclick="openAddInstanceModal()" title="Nueva Instancia">+</button>
                     {% endif %}
                 </div>
@@ -78,7 +90,7 @@
             <div class="sidebar-actions">
                 {% set r = role.lower() %}
                 {% set is_dba = 'dba' in r or 'admin' in r or 'super' in r %}
-                {% set is_admin = 'administrador' in r or 'super' in r %}
+                {% set is_admin = 'administrador' in r or 'admin' in r or 'super' in r %}
                 <button class="action-btn" onclick="sendAction('status')">
                     <span class="action-icon">📊</span>
                     <span>Estado SQL Server</span>
@@ -97,7 +109,7 @@
 
                 <button class="action-btn" onclick="sendAction('cpu')">
                     <span class="action-icon">⚙️</span>
-                    <span>Uso de CPU</span>
+                    <span>Monitor de Salud</span>
                 </button>
 
                 {% if is_dba %}
@@ -126,6 +138,16 @@
                 </button>
                 {% endif %}
 
+                <button class="action-btn" onclick="sendAction('jobs')">
+                    <span class="action-icon">📋</span>
+                    <span>Validación de Jobs</span>
+                </button>
+
+                <button class="action-btn" onclick="sendAction('alwayson')">
+                    <span class="action-icon">🔗</span>
+                    <span>Always On Availability Groups</span>
+                </button>
+
                 {% if is_dba %}
                 <button class="action-btn" onclick="sendAction('performance')">
                     <span class="action-icon">📈</span>
@@ -146,7 +168,12 @@
                 </button>
                 {% endif %}
             </div>
+        </div>
 
+        <!-- Version Badge -->
+        <div class="version-badge-container">
+            <div class="version-badge">{{ APP_VERSION }}</div>
+        </div>
     </aside>
 
     <!-- Main Chat Area -->
@@ -164,6 +191,8 @@
 
             <div class="header-right">
                 <button class="theme-toggle" id="themeToggle" onclick="toggleTheme()" title="Cambiar Tema">🌙</button>
+                <button class="theme-toggle" id="feedbackToggle" onclick="openFeedbackModal()" title="Danos tu Feedback"
+                    style="margin-right: 8px;">⭐</button>
                 <div class="user-profile-header user-panel-trigger" onclick="openProfileModal()">
                     <div class="user-info-header">
                         <span class="user-name-header">{{ full_name }}</span>
@@ -188,7 +217,7 @@
                     pregunta SQL.</p>
                 <div class="quick-actions">
                     <button class="quick-btn" onclick="sendAction('status')">📊 Estado SQL</button>
-                    <button class="quick-btn" onclick="sendAction('cpu')">⚙️ CPU</button>
+                    <button class="quick-btn" onclick="sendAction('cpu')">⚙️ Salud</button>
                     <button class="quick-btn" onclick="sendAction('performance')">📈 Performance</button>
                     <button class="quick-btn" onclick="sendAction('discos')">💾 Discos</button>
                 </div>
@@ -245,26 +274,49 @@
 
                 <!-- MFA Section -->
                 <div style="margin-top: 20px; padding-top: 20px; border-top: 1px solid var(--border-subtle);">
-                    <label
-                        style="display: block; font-size: 14px; font-weight: 600; margin-bottom: 12px; color: var(--accent-light);">Seguridad:
-                        Microsoft Authenticator (MFA)</label>
-                    <div id="mfaSetupContainer">
+                    <div
+                        style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+                        <label
+                            style="font-size: 14px; font-weight: 600; color: var(--accent-light); margin: 0;">Seguridad:
+                            Microsoft Authenticator (MFA)</label>
+                        <span id="mfaStatusBadge" class="version-badge"
+                            style="background: {% if mfa_enabled %}#10b981{% else %}var(--red){% endif %}; font-size: 10px; padding: 2px 8px;">
+                            {% if mfa_enabled %}Activo ✅{% else %}Inactivo ❌{% endif %}
+                        </span>
+                    </div>
+
+                    <div id="mfaSetupContainer" {% if mfa_enabled %}style="display: none;" {% endif %}>
                         <button type="button" class="quick-btn" onclick="setupMFA()"
                             style="width: 100%; margin: 0; background: rgba(99, 102, 241, 0.1); border: 1px dashed var(--accent);">Configurar
                             Segundo Factor (MFA)</button>
                     </div>
+
+                    {% if mfa_enabled %}
+                    <div id="mfaEnabledContainer"
+                        style="text-align: center; padding: 10px; background: rgba(16, 185, 129, 0.05); border-radius: 8px; border: 1px solid rgba(16, 185, 129, 0.2);">
+                        <p style="font-size: 12px; color: var(--text-secondary); margin: 0;">Tu cuenta está protegida
+                            con MFA.</p>
+                        <button type="button" class="quick-btn" onclick="setupMFA()"
+                            style="font-size: 11px; margin-top: 8px; opacity: 0.7;">Re-configurar MFA</button>
+                    </div>
+                    {% endif %}
+
                     <div id="mfaQRContainer" style="display: none; text-align: center; margin-top: 15px;">
                         <p style="font-size: 12px; color: var(--text-secondary); margin-bottom: 10px;">Escanea este
-                            código con Microsoft Authenticator:</p>
+                            código con la app Authenticator:</p>
                         <div style="background: white; padding: 10px; border-radius: 8px; display: inline-block;">
                             <img id="mfaQRCode" src="" style="width: 180px; height: 180px; display: block;">
                         </div>
                         <div class="form-group" style="margin-top: 15px; text-align: left;">
-                            <label style="font-size: 12px;">Ingresa el código de 6 dígitos para validar:</label>
+                            <label style="font-size: 12px;">Código de verificación:</label>
                             <input type="text" id="mfaConfirmToken" class="form-input" placeholder="000000"
-                                maxlength="6" style="text-align: center; letter-spacing: 4px; font-weight: bold;">
-                            <button type="button" class="save-btn" onclick="activateMFA()"
-                                style="margin-top: 10px; width: 100%;">Verificar y Activar</button>
+                                maxlength="6" style="text-align: center; letter-spacing: 4px; font-weight: bold;"
+                                oninput="validateMFAInput()">
+                            <button type="button" id="mfaActivateBtn" class="save-btn" onclick="activateMFA()"
+                                style="margin-top: 10px; width: 100%; opacity: 0.5;" disabled>Verificar y
+                                Activar</button>
+                            <button type="button" class="action-btn" onclick="cancelMFASetup()"
+                                style="width: 100%; margin-top: 5px; font-size: 11px;">Cancelar</button>
                         </div>
                     </div>
                 </div>
@@ -402,6 +454,93 @@
                         placeholder="DRIVER={...};SERVER=...;UID=...;PWD=..." required></textarea>
                 </div>
                 <button type="submit" class="save-btn">Crear Instancia</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Feedback Modal -->
+    <div class="modal-overlay" id="feedbackModal">
+        <div class="modal-content" style="max-width: 450px;">
+            <div class="modal-header">
+                <h3>Tu Opinión Importa</h3>
+                <button class="close-modal" onclick="closeModal('feedbackModal')">✕</button>
+            </div>
+            <div style="text-align: center; margin-bottom: 20px;">
+                <p style="color: var(--text-secondary); font-size: 14px;">¿Cómo calificarías tu experiencia con
+                    DataCheck?</p>
+                <div class="star-rating" id="starRating">
+                    <span class="star" data-value="1">⭐</span>
+                    <span class="star" data-value="2">⭐</span>
+                    <span class="star" data-value="3">⭐</span>
+                    <span class="star" data-value="4">⭐</span>
+                    <span class="star" data-value="5">⭐</span>
+                </div>
+            </div>
+            <div class="form-group">
+                <label>Sugerencias o Recomendaciones</label>
+                <textarea id="feedbackSuggestion" class="form-input" rows="4"
+                    placeholder="Cuéntanos cómo podemos mejorar..."></textarea>
+            </div>
+            <button type="button" class="save-btn" onclick="submitFeedback()" id="submitFeedbackBtn">Enviar
+                Feedback</button>
+        </div>
+    </div>
+
+    <!-- Support Modal -->
+    <div class="modal-overlay" id="soporteModal">
+        <div class="modal-content" style="max-width: 500px;">
+            <div class="modal-header">
+                <h3>🆘 Solicitud de Soporte</h3>
+                <button class="close-modal" onclick="closeModal('soporteModal')">✕</button>
+            </div>
+            <form id="soporteForm" onsubmit="submitSoporte(event)">
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+                    <div class="form-group">
+                        <label>Tipo de Solicitud</label>
+                        <select id="soporteTipo" class="form-select" required>
+                            <option value="Incidente">Incidente</option>
+                            <option value="Requerimiento">Requerimiento</option>
+                            <option value="Pregunta">Pregunta</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Módulo / Área</label>
+                        <select id="soporteModulo" class="form-select" required>
+                            <option value="General">General</option>
+                            <option value="Sesiones">Sesiones</option>
+                            <option value="DBA">DBA</option>
+                            <option value="Performance">Performance</option>
+                            <option value="Seguridad">Seguridad</option>
+                            <option value="Otros">Otros</option>
+                        </select>
+                    </div>
+                </div>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+                    <div class="form-group">
+                        <label>Impacto</label>
+                        <select id="soporteImpacto" class="form-select" required>
+                            <option value="Bajo">Bajo</option>
+                            <option value="Medio" selected>Medio</option>
+                            <option value="Alto">Alto</option>
+                            <option value="Crítico">Crítico</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Prioridad</label>
+                        <select id="soportePrioridad" class="form-select" required>
+                            <option value="Baja">Baja</option>
+                            <option value="Media" selected>Media</option>
+                            <option value="Alta">Alta</option>
+                            <option value="Urgente">Urgente</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>Descripción del Problema</label>
+                    <textarea id="soporteMensaje" class="form-input" rows="4"
+                        placeholder="Describe detalladamente el problema o solicitud..." required></textarea>
+                </div>
+                <button type="submit" class="save-btn" id="soporteBtn">Enviar Solicitud</button>
             </form>
         </div>
     </div>

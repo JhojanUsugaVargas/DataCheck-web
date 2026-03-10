@@ -2,7 +2,7 @@ pipeline {
     agent none
 
     environment {
-        BASE_VERSION = 11
+        BASE_VERSION = 00
     }
 
     triggers {
@@ -34,6 +34,22 @@ pipeline {
                     echo "Construyendo imagen versión: ${env.NEW_VERSION}"
                     
                     sh "sudo -i bash -c 'export PATH=/usr/local/bin:\$PATH; cd ${WORKSPACE} && nerdctl -n k8s.io build -t datacheck-web:${env.NEW_VERSION} .'"
+                }
+            }
+        }
+
+        stage('Prune Old Images') {
+            agent { label 'vbogdtlmosp11' }
+            steps {
+                script {
+                    echo "Depurando imágenes antiguas, manteniendo solo las últimas 5..."
+                    sh """
+                        sudo -i bash -c 'export PATH=/usr/local/bin:\$PATH; \
+                        nerdctl -n k8s.io images --format "{{.Tag}}" datacheck-web | \
+                        sort -V -r | \
+                        tail -n +6 | \
+                        xargs -r -I {} nerdctl -n k8s.io rmi datacheck-web:{}'
+                    """
                 }
             }
         }
