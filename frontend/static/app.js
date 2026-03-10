@@ -86,6 +86,7 @@ function sendAction(action) {
         'performance': '📈 Verificar Performance',
         'jobs': '📋 Validación de Jobs',
         'alwayson': '🔗 Always On Availability Groups',
+        'databases': '🗄️ Bases de Datos',
         'soporte': '🆘 Solicitud de Soporte'
     };
 

@@ -18,7 +18,7 @@ def query_alwayson_status(cursor):
             return {
                 'type': 'info',
                 'message': (
-                    f"⚠️ **Always On no está habilitado** en la instancia **{cursor.execute('SELECT @@SERVERNAME').fetchone()[0]}**.\n\n"
+                    f"⚠️ **Always On no está habilitado - {cursor.execute('SELECT @@SERVERNAME').fetchone()[0]}**\n\n"
                     "**Requerimientos:**\n"
                     "• Windows Server Failover Cluster (WSFC)\n"
                     "• SQL Server Enterprise Edition\n"
@@ -54,7 +54,7 @@ def query_alwayson_status(cursor):
         if not rows:
             return {
                 'type': 'info',
-                'message': f"ℹ️ **Always On habilitado**, pero no existenAvailability Groups creados en **{cursor.execute('SELECT @@SERVERNAME').fetchone()[0]}**."
+                'message': f"ℹ️ **Always On habilitado ({cursor.execute('SELECT @@SERVERNAME').fetchone()[0]})**, pero no existen Availability Groups creados."
             }
 
         columns = [desc[0] for desc in cursor.description]
