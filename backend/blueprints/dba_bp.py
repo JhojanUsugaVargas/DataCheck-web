@@ -7,6 +7,7 @@ from services.dba_queries.database_sizes import query_database_sizes
 from services.dba_queries.instance_monitor import query_instance_monitor
 from services.dba_queries.tempdb_monitor import query_tempdb_usage
 from services.dba_queries.job_monitor import query_job_monitor
+from services.dba_queries.alwayson_monitor import query_alwayson_status
 import re
 
 dba_bp = Blueprint('dba', __name__)
@@ -250,6 +251,25 @@ def action_jobs():
     except Exception as e:
         if conn: conn.close()
         return jsonify({'type': 'error', 'message': f'❌ Error al consultar jobs: {str(e)}'})
+
+@dba_bp.route('/api/alwayson')
+@login_required
+def action_alwayson():
+    """Consulta el estado de Always On Availability Groups."""
+    conn = get_active_conn()
+    if not conn:
+        return jsonify({'type': 'error', 'message': '❌ Error al conectar a la base de datos.'})
+
+    try:
+        cursor = conn.cursor()
+        data = query_alwayson_status(cursor)
+        conn.close()
+
+        # query_alwayson_status ya devuelve el diccionario formateado
+        return jsonify(data)
+    except Exception as e:
+        if conn: conn.close()
+        return jsonify({'type': 'error', 'message': f'❌ Error al consultar Always On: {str(e)}'})
 
 @dba_bp.route('/api/tempdb/shrink')
 @login_required

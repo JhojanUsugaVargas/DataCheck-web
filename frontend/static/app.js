@@ -85,6 +85,7 @@ function sendAction(action) {
         'tempdb': '🧹 TempDB',
         'performance': '📈 Verificar Performance',
         'jobs': '📋 Validación de Jobs',
+        'alwayson': '🔗 Always On Availability Groups',
         'soporte': '🆘 Solicitud de Soporte'
     };
 
