@@ -172,6 +172,24 @@ def api_add_instance():
         conn.close()
 
 # Error handlers
+@app.route('/img/<path:filename>')
+def serve_external_img(filename):
+    """Sirve imágenes desde la ruta especificada por el usuario para el logo."""
+    import os
+    from flask import send_from_directory
+    
+    # Intentar en la ruta absoluta especificada por el usuario (Linux/Docker style)
+    external_path = "/app/datacheck/img"
+    if os.path.exists(external_path):
+        return send_from_directory(external_path, filename)
+    
+    # Fallback a Windows si aplica
+    win_path = "C:\\app\\datacheck\\img"
+    if os.path.exists(win_path):
+        return send_from_directory(win_path, filename)
+        
+    return jsonify({'error': 'Imagen no encontrada'}), 404
+
 @app.errorhandler(404)
 def page_not_found(e):
     return jsonify({'error': 'No encontrado'}), 404
