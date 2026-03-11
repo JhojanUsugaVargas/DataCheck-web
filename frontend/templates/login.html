@@ -5,7 +5,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>DataCheck — Login</title>
-    <link rel="icon" type="image/png" href="{{ APP_BASE_URL }}/img/IsotipoARUS.png">
+    <link rel="icon" type="image/png" href="{{ APP_BASE_URL }}/img/Isotipo%20ARUS.png">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <style>
@@ -317,7 +317,7 @@
     <div class="login-container">
         <div class="login-card">
             <div class="logo">
-                <img src="{{ APP_BASE_URL }}/img/IsotipoARUS.png" alt="ARUS Logo" style="width: 80px; height: auto; margin-bottom: 20px; filter: invert(1) hue-rotate(180deg) drop-shadow(0 8px 16px rgba(99, 102, 241, 0.4)); mix-blend-mode: screen; background: transparent; border: none; display: inline-block;">
+                <img src="{{ APP_BASE_URL }}/img/Isotipo%20ARUS.png" class="login-logo" alt="ARUS" style="height: 85px; margin-bottom: 12px; object-fit: contain;">
                 <h1>DataCheck</h1>
                 <p>Panel de Monitoreo SQL Server</p>
             </div>
@@ -352,8 +352,11 @@
                 <button type="submit" class="login-btn" id="loginBtn">Iniciar Sesión</button>
             </form>
 
-            <p class="footer-text" style="color: rgba(180, 190, 230, 0.7); font-weight: 600; margin-bottom: 4px; letter-spacing: 1px;">INGENIEROS DBA - APP</p>
-            <p class="footer-text">DataCheck Web © 2026<br>{{ APP_VERSION }}</p>
+            <p class="footer-text">
+                INGENIEROS DBA - APP<br><br>
+                DataCheck Web © 2026<br>
+                {{ APP_VERSION }}
+            </p>
         </div>
     </div>
 
