@@ -1750,4 +1750,233 @@ function renderTopCPUQueries(title, data) {
     msgEl.appendChild(content);
     container.appendChild(msgEl);
     scrollToBottom();
+    scrollToBottom();
+}
+
+/**
+ * ── Dashboards Modal Overlay Logic ──
+ * Displays all 4 dashboards in a large grid modal
+ */
+
+function openDashboardsFull() {
+    document.getElementById('dashboardsFullModal').style.display = 'flex';
+    loadAllDashboardsModal();
+}
+
+function closeDashboardsFull() {
+    document.getElementById('dashboardsFullModal').style.display = 'none';
+}
+
+async function loadAllDashboardsModal() {
+    const btn = document.getElementById('modalRefreshBtn');
+    if (btn) {
+        btn.disabled = true;
+        btn.textContent = '⏳ Cargando...';
+    }
+
+    try {
+        await Promise.all([
+            loadModalResourceChart(),
+            loadModalServicesStatus(),
+            loadModalTransactions(),
+            loadModalTopCPUQueries()
+        ]);
+    } catch (err) {
+        console.error('Error loading dashboards:', err);
+    } finally {
+        if (btn) {
+            btn.disabled = false;
+            btn.textContent = '🔄 Actualizar';
+        }
+    }
+}
+
+// ── 1. Resource Chart (Modal) ──
+async function loadModalResourceChart() {
+    const container = document.getElementById('modalResourceContent');
+    container.innerHTML = '<div class="panel-loading"><div class="spinner"></div> Cargando recursos...</div>';
+    
+    try {
+        const res = await fetch(window.API_BASE + '/api/chat', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ action: 'resource_chart' })
+        });
+        const data = await res.json();
+        
+        if (!data || data.type === 'error') {
+            container.innerHTML = `<div class="panel-error">❌ ${data?.message || 'Error'}</div>`;
+            return;
+        }
+
+        const d = data.data;
+        const memColor = d.memory_percent > 80 ? '#ef4444' : d.memory_percent > 50 ? '#f59e0b' : '#10b981';
+
+        container.innerHTML = `
+            <div style="width:100%; height:250px; position:relative;">
+                <canvas id="modalResourceChartCanvas"></canvas>
+            </div>
+            <div class="resource-chart-summary" style="margin-top:12px; display:grid; grid-template-columns: repeat(3, 1fr); gap:10px;">
+                <div class="resource-summary-card" style="padding:10px; background:var(--bg-card); border:1px solid var(--border-subtle); border-radius:8px; text-align:center;">
+                    <div style="font-size:18px; font-weight:700; color:var(--accent)">${d.sql_cpu.length > 0 ? d.sql_cpu[d.sql_cpu.length - 1] : 0}%</div>
+                    <div style="font-size:10px; color:var(--text-muted)">CPU SQL</div>
+                </div>
+                <div class="resource-summary-card" style="padding:10px; background:var(--bg-card); border:1px solid var(--border-subtle); border-radius:8px; text-align:center;">
+                    <div style="font-size:18px; font-weight:700; color:${memColor}">${d.memory_percent}%</div>
+                    <div style="font-size:10px; color:var(--text-muted)">MEMORIA</div>
+                </div>
+                <div class="resource-summary-card" style="padding:10px; background:var(--bg-card); border:1px solid var(--border-subtle); border-radius:8px; text-align:center;">
+                    <div style="font-size:12px; font-weight:600;">${d.memory_used_mb.toLocaleString()} MB</div>
+                    <div style="font-size:10px; color:var(--text-muted)">de ${d.memory_total_mb.toLocaleString()}</div>
+                </div>
+            </div>
+        `;
+
+        setTimeout(() => {
+            const ctx = document.getElementById('modalResourceChartCanvas');
+            if (!ctx) return;
+            const isDark = !document.body.classList.contains('light-mode');
+            const gridColor = isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.08)';
+            const textColor = isDark ? 'rgba(255,255,255,0.7)' : 'rgba(0,0,0,0.7)';
+
+            if (window.modalChartInstance) window.modalChartInstance.destroy();
+            window.modalChartInstance = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: d.timestamps,
+                    datasets: [
+                        {
+                            label: 'CPU SQL (%)',
+                            data: d.sql_cpu,
+                            borderColor: '#6366f1',
+                            backgroundColor: 'rgba(99, 102, 241, 0.1)',
+                            borderWidth: 2, fill: true, tension: 0.4, pointRadius: 1
+                        },
+                        {
+                            label: 'CPU Otros (%)',
+                            data: d.other_cpu,
+                            borderColor: '#8b5cf6',
+                            borderWidth: 1, fill: false, tension: 0.4, borderDash: [4, 4], pointRadius: 0
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true, maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        x: { display:false },
+                        y: { min: 0, max: 100, grid: { color: gridColor }, ticks: { color: textColor, font: { size: 10 } } }
+                    }
+                }
+            });
+        }, 50);
+
+    } catch (e) {
+        container.innerHTML = `<div class="panel-error">❌ Error de conexión</div>`;
+    }
+}
+
+async function loadModalServicesStatus() {
+    const container = document.getElementById('modalServicesContent');
+    try {
+        const res = await fetch(window.API_BASE + '/api/chat', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ action: 'services_status' })
+        });
+        const data = await res.json();
+        
+        if (!data || data.type === 'error' || data.type === 'success') {
+            container.innerHTML = `<div class="panel-error">❌ ${data?.message || 'No hay data'}</div>`;
+            return;
+        }
+
+        let html = '<div style="display:grid; grid-template-columns: 1fr 1fr; gap:12px;">';
+        data.data.forEach(svc => {
+            html += `
+                <div style="padding:12px; background:var(--bg-card); border:1px solid var(--border-subtle); border-radius:10px;">
+                    <div style="display:flex; align-items:center; gap:8px; margin-bottom:8px;">
+                        <span style="font-size:16px;">${svc.status_icon}</span>
+                        <div style="font-weight:600; font-size:13px; line-height:1.2;">${svc.servicetype}</div>
+                    </div>
+                    <div style="font-size:11px; color:var(--text-muted);">${svc.statusdesc}</div>
+                </div>`;
+        });
+        html += '</div>';
+        container.innerHTML = html;
+    } catch (e) {
+        container.innerHTML = `<div class="panel-error">❌ Error</div>`;
+    }
+}
+
+async function loadModalTransactions() {
+    const container = document.getElementById('modalTransactionsContent');
+    try {
+        const res = await fetch(window.API_BASE + '/api/chat', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ action: 'transactions' })
+        });
+        const data = await res.json();
+        
+        if (!data || data.type === 'error' || data.type === 'success') {
+            container.innerHTML = `<div class="panel-error">❌ ${data?.message || 'No hay data'}</div>`;
+            return;
+        }
+
+        let html = '<div style="display:flex; flex-direction:column; gap:8px;">';
+        data.data.slice(0, 6).forEach(db => {
+            const clr = db.active_transactions > 5 ? 'var(--red)' : 'var(--accent)';
+            html += `
+                <div style="padding:10px; background:var(--bg-card); border:1px solid var(--border-subtle); border-radius:8px; display:flex; justify-content:space-between; align-items:center;">
+                    <div style="font-size:13px; font-weight:500;">🗄️ ${db.database}</div>
+                    <div style="font-size:12px; color:${clr}">${db.transactions_sec} t/s</div>
+                </div>`;
+        });
+        html += '</div>';
+        container.innerHTML = html;
+    } catch (e) {
+        container.innerHTML = `<div class="panel-error">❌ Error</div>`;
+    }
+}
+
+async function loadModalTopCPUQueries() {
+    const container = document.getElementById('modalCPUContent');
+    try {
+        const res = await fetch(window.API_BASE + '/api/chat', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ action: 'top_cpu_queries' })
+        });
+        const data = await res.json();
+        
+        if (!data || data.type === 'error' || data.type === 'success') {
+            container.innerHTML = `<div class="panel-error">❌ ${data?.message || 'No hay data'}</div>`;
+            return;
+        }
+
+        let html = '<div style="display:flex; flex-direction:column; gap:12px;">';
+        data.data.forEach((q, idx) => {
+            const cpuColor = q.cpu_percent > 80 ? '#ef4444' : q.cpu_percent > 50 ? '#f59e0b' : '#6366f1';
+            html += `
+                <div style="padding:15px; background:var(--bg-card); border:1px solid var(--border-subtle); border-radius:12px; border-left:4px solid ${cpuColor}">
+                    <div style="display:flex; justify-content:space-between; margin-bottom:8px;">
+                        <span style="font-weight:600; font-size:14px;">#${idx+1} ${q.database}</span>
+                        <span style="color:var(--text-muted); font-size:11px;">${q.last_execution}</span>
+                    </div>
+                    <div style="background:var(--bg-input); padding:8px; border-radius:6px; font-family:'JetBrains Mono'; font-size:11px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; margin-bottom:8px;">
+                        <code>${q.query_text}</code>
+                    </div>
+                    <div style="display:flex; gap:15px; font-size:11px; color:var(--text-secondary);">
+                        <span>📊 ${q.cpu_percent}% CPU</span>
+                        <span>⏱️ ${q.avg_cpu_ms}ms avg</span>
+                        <span>⚡ ${q.execution_count} ejec.</span>
+                    </div>
+                </div>`;
+        });
+        html += '</div>';
+        container.innerHTML = html;
+    } catch (e) {
+        container.innerHTML = `<div class="panel-error">❌ Error</div>`;
+    }
 }

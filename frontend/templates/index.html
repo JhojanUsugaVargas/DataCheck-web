@@ -5,7 +5,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>DataCheck — Monitor SQL Server</title>
-    <link rel="icon" type="image/png" href="{{ APP_BASE_URL }}/img/Isotipo%20ARUS.png">
+    <link rel="icon" type="image/png" href="{{ APP_BASE_URL }}/img/Isologo%20ARUS.png">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link
         href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap"
@@ -48,7 +48,7 @@
     <aside class="sidebar" id="sidebar">
         <div class="sidebar-header">
             <div class="sidebar-logo">
-                <img src="{{ APP_BASE_URL }}/img/Isotipo%20ARUS.png" alt="" style="width: 24px; height: auto; margin-right: 8px; object-fit: contain;">
+                <img src="{{ APP_BASE_URL }}/img/Isologo%20ARUS.png" alt="" style="width: 24px; height: auto; margin-right: 8px; object-fit: contain;">
                 <span>DataCheck</span>
             </div>
             <button class="sidebar-close" id="sidebarClose" onclick="toggleSidebar()">✕</button>
@@ -160,7 +160,7 @@
                     <span>Validar Backups</span>
                 </button>
 
-                <button class="action-btn dashboards-hub-btn" onclick="window.open(window.API_BASE + '/dashboards', '_blank')">
+                <button class="action-btn dashboards-hub-btn" onclick="openDashboardsFull()">
                     <span class="action-icon">📊</span>
                     <span>Dashboards</span>
                 </button>
@@ -199,7 +199,7 @@
         <header class="chat-header">
             <button class="menu-toggle" onclick="toggleSidebar()">☰</button>
             <div class="header-logo">
-                <img src="{{ APP_BASE_URL }}/img/Isotipo%20ARUS.png" alt="" style="width: 32px; height: auto; margin-right: 12px; object-fit: contain;">
+                <img src="{{ APP_BASE_URL }}/img/Isologo%20ARUS.png" alt="" style="width: 32px; height: auto; margin-right: 12px; object-fit: contain;">
                 <div class="logo-text">
                     <span class="logo-main">DataCheck</span>
                     <span class="logo-sub">Asistente Virtual - Base de Datos</span>
@@ -562,6 +562,67 @@
         </div>
     </div>
 
+    <!-- Dashboards Full Modal (Large Overlay) -->
+    <div id="dashboardsFullModal" class="modal-overlay" style="display:none; z-index: 1000;">
+        <div class="modal-content dashboards-full-modal">
+            <div class="modal-header">
+                <div style="display: flex; align-items: center; gap: 12px;">
+                    <span style="font-size: 24px;">📊</span>
+                    <h3 style="margin:0;">Dashboards de Monitoreo</h3>
+                </div>
+                <div style="display: flex; gap: 12px; align-items: center;">
+                    <button class="save-btn" onclick="loadAllDashboardsModal()" id="modalRefreshBtn" style="padding: 8px 16px;">🔄 Actualizar</button>
+                    <button class="modal-close" onclick="closeDashboardsFull()" style="margin:0; background:none; border:none; font-size:24px; cursor:pointer; color:var(--text-secondary);">&times;</button>
+                </div>
+            </div>
+            
+            <div class="dashboards-full-grid">
+                <!-- 1. Resource Chart -->
+                <div class="dashboard-panel" id="modalPanelResources">
+                    <div class="dashboard-panel-header">
+                        <div class="panel-icon" style="background: linear-gradient(135deg, #6366f1, #8b5cf6);">📈</div>
+                        <span class="panel-title">Consumo de Recursos (CPU & Memoria)</span>
+                    </div>
+                    <div id="modalResourceContent" class="modal-panel-content">
+                        <div class="panel-loading"><div class="spinner"></div> Cargando...</div>
+                    </div>
+                </div>
+
+                <!-- 2. Services Status -->
+                <div class="dashboard-panel" id="modalPanelServices">
+                    <div class="dashboard-panel-header">
+                        <div class="panel-icon" style="background: linear-gradient(135deg, #f59e0b, #fbbf24);">🟢</div>
+                        <span class="panel-title">Estado de Servicios SQL</span>
+                    </div>
+                    <div id="modalServicesContent" class="modal-panel-content">
+                        <div class="panel-loading"><div class="spinner"></div> Cargando...</div>
+                    </div>
+                </div>
+
+                <!-- 3. Transactions -->
+                <div class="dashboard-panel" id="modalPanelTransactions">
+                    <div class="dashboard-panel-header">
+                        <div class="panel-icon" style="background: linear-gradient(135deg, #10b981, #34d399);">🔄</div>
+                        <span class="panel-title">Transacciones por Base de Datos</span>
+                    </div>
+                    <div id="modalTransactionsContent" class="modal-panel-content">
+                        <div class="panel-loading"><div class="spinner"></div> Cargando...</div>
+                    </div>
+                </div>
+
+                <!-- 4. Top CPU Queries (Full Width) -->
+                <div class="dashboard-panel full-width" id="modalPanelCPU">
+                    <div class="dashboard-panel-header">
+                        <div class="panel-icon" style="background: linear-gradient(135deg, #ef4444, #f87171);">🔥</div>
+                        <span class="panel-title">Top 5 Consultas más Pesadas en CPU</span>
+                    </div>
+                    <div id="modalCPUContent" class="modal-panel-content">
+                        <div class="panel-loading"><div class="spinner"></div> Cargando...</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
 
 
     <script src="{{ APP_BASE_URL }}/static/app.js"></script>
