@@ -32,7 +32,7 @@ def get_pmp_consolidated_data(cursor):
         ORDER BY DB, type
         """
         cursor.execute(query_files)
-        data['db_files'] = [dict(zip([d[0] for d in cursor.description], row)) for row in cursor.fetchall()]
+        data['db_files'] = [dict(zip([d[0].lower() for d in cursor.description], row)) for row in cursor.fetchall()]
 
         # 3. INFORME DE ESPACIO LIBRE (Particiones)
         # Solo disponible en versiones modernas de SQL o si el usuario tiene permisos
@@ -40,7 +40,7 @@ def get_pmp_consolidated_data(cursor):
             query_disk = "SELECT DISTINCT logical_volume_name, CAST(free_bytes/1024.0/1024.0/1024.0 AS DECIMAL(10,2)) as FreeGB FROM sys.dm_os_volume_stats(DB_ID('master'), 1)"
             # Nota: dm_os_volume_stats requiere un bit de cuidado, usaremos una versión más genérica si falla
             cursor.execute("SELECT DISTINCT volume_mount_point, CAST(available_bytes/1048576.0/1024.0 AS DECIMAL(10,2)) as FreeGB FROM sys.dm_os_enumerate_fixed_drives")
-            data['disk_free'] = [dict(zip([d[0] for d in cursor.description], row)) for row in cursor.fetchall()]
+            data['disk_free'] = [dict(zip([d[0].lower() for d in cursor.description], row)) for row in cursor.fetchall()]
         except:
             data['disk_free'] = []
 
@@ -54,22 +54,22 @@ def get_pmp_consolidated_data(cursor):
         ORDER BY backup_finish_date DESC
         """
         cursor.execute(query_backups)
-        data['backups'] = [dict(zip([d[0] for d in cursor.description], row)) for row in cursor.fetchall()]
+        data['backups'] = [dict(zip([d[0].lower() for d in cursor.description], row)) for row in cursor.fetchall()]
 
         # 5. BASES DE DATOS NUEVAS (Últimos 30 días)
         query_new_dbs = "SELECT name, create_date FROM sys.databases WHERE create_date > DATEADD(day, -30, GETDATE()) AND name NOT IN ('master', 'model', 'msdb', 'tempdb')"
         cursor.execute(query_new_dbs)
-        data['new_dbs'] = [dict(zip([d[0] for d in cursor.description], row)) for row in cursor.fetchall()]
+        data['new_dbs'] = [dict(zip([d[0].lower() for d in cursor.description], row)) for row in cursor.fetchall()]
 
         # 6. LINKED SERVERS
         query_linked = "SELECT name, product, provider, data_source FROM sys.servers WHERE is_linked = 1"
         cursor.execute(query_linked)
-        data['linked_servers'] = [dict(zip([d[0] for d in cursor.description], row)) for row in cursor.fetchall()]
+        data['linked_servers'] = [dict(zip([d[0].lower() for d in cursor.description], row)) for row in cursor.fetchall()]
 
         # 7. NUEVOS USUARIOS CREADOS ( logins últimos 30 días)
         query_logins = "SELECT name, create_date FROM sys.server_principals WHERE type_desc IN ('SQL_LOGIN', 'WINDOWS_LOGIN') AND create_date > DATEADD(day, -30, GETDATE())"
         cursor.execute(query_logins)
-        data['new_users'] = [dict(zip([d[0] for d in cursor.description], row)) for row in cursor.fetchall()]
+        data['new_users'] = [dict(zip([d[0].lower() for d in cursor.description], row)) for row in cursor.fetchall()]
 
         # 8. INFORME DE TAREAS FALLIDAS (Últimas 24h)
         query_failed_jobs = """
@@ -87,7 +87,7 @@ def get_pmp_consolidated_data(cursor):
         """
         try:
             cursor.execute(query_failed_jobs)
-            data['failed_jobs'] = [dict(zip([d[0] for d in cursor.description], row)) for row in cursor.fetchall()]
+            data['failed_jobs'] = [dict(zip([d[0].lower() for d in cursor.description], row)) for row in cursor.fetchall()]
         except:
             data['failed_jobs'] = []
 
