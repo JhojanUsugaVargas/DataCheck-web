@@ -19,18 +19,28 @@ class PMPReport(FPDF):
         self.ln(4)
 
     def draw_table(self, header, data, col_widths):
-        self.set_font('Arial', 'B', 10)
-        for i, h in enumerate(header):
-            self.cell(col_widths[i], 7, h, 1, 0, 'C')
-        self.ln()
-        
-        self.set_font('Arial', '', 9)
-        for row in data:
-            # Handle multi-line if needed, but for simplicity we use truncated cells
-            for i, item in enumerate(row):
-                text = str(item)[:50] if i < len(row)-1 else str(item)
-                self.cell(col_widths[i], 6, text, 1)
-            self.ln()
+        # fpdf2 table API is much better for automatic wrapping
+        with self.table(
+            borders_layout="ALL",
+            cell_fill_color=245,
+            cell_fill_mode="ROWS",
+            line_height=5,
+            text_align="LEFT",
+            width=190,
+            col_widths=col_widths
+        ) as table:
+            # Header row
+            row = table.row()
+            self.set_font('Arial', 'B', 10)
+            for h in header:
+                row.cell(h)
+            
+            # Data rows
+            self.set_font('Arial', '', 9)
+            for r in data:
+                row = table.row()
+                for item in r:
+                    row.cell(str(item))
         self.ln(5)
 
 def generate_pmp_pdf(data):
@@ -48,51 +58,52 @@ def generate_pmp_pdf(data):
     # 2. Archivos Físicos
     pdf.chapter_title('INFORME DE ESPACIO Y ARCHIVOS FISICOS DE BASES DE DATOS')
     header = ['BASE DE DATOS', 'UBICACION', 'NOMBRE ARCHIVO', 'TAMAÑO (MB)']
-    col_widths = [45, 90, 30, 25]
+    # Ajustar para dar más espacio a ubicación
+    col_widths = [15, 50, 20, 15] 
     rows = [[r['db'], r['location'], r['filename'], r['sizemb']] for r in data['db_files']]
     pdf.draw_table(header, rows, col_widths)
     
     # 3. Espacio Libre
     pdf.chapter_title('INFORME DE ESPACIO LIBRE')
     header = ['PARTICION', 'ESPACIO LIBRE (GB)']
-    col_widths = [95, 95]
+    col_widths = [50, 50]
     rows = [[r['volume_mount_point'], r['freegb']] for r in data['disk_free']] if data['disk_free'] else [['N/A', 'N/A']]
     pdf.draw_table(header, rows, col_widths)
     
     # 4. Respaldos
     pdf.chapter_title('INFORME DE RESPALDOS REALIZADOS')
     header = ['FINALIZA EL RESPALDO', 'TIPO', 'BASE DE DATOS']
-    col_widths = [60, 40, 90]
+    col_widths = [25, 15, 60]
     rows = [[r['finishdate'], r['type'], r['db']] for r in data['backups']]
     pdf.draw_table(header, rows, col_widths)
     
     # 5. DBs Nuevas
     pdf.chapter_title('BASES DE DATOS NUEVAS')
     header = ['NOMBRE', 'FECHA DE CREACION']
-    col_widths = [95, 95]
+    col_widths = [50, 50]
     rows = [[r['name'], r['create_date']] for r in data['new_dbs']]
     pdf.draw_table(header, rows, col_widths)
     
     # 6. Linked Servers
     pdf.chapter_title('LINKED SERVERS')
     header = ['NOMBRE SERVIDOR', 'PRODUCTO', 'ORIGEN DE DATOS']
-    col_widths = [60, 40, 90]
+    col_widths = [30, 20, 50]
     rows = [[r['name'], r['product'], r['data_source']] for r in data['linked_servers']]
     pdf.draw_table(header, rows, col_widths)
     
     # 7. Usuarios Nuevos
     pdf.chapter_title('NUEVOS USUARIOS CREADOS')
     header = ['USUARIO', 'CREADO']
-    col_widths = [95, 95]
+    col_widths = [50, 50]
     rows = [[r['name'], r['create_date']] for r in data['new_users']]
     pdf.draw_table(header, rows, col_widths)
     
     # 8. Jobs Fallidos
     pdf.chapter_title('INFORME DE TAREAS FALLIDAS')
     header = ['NOMBRE JOB', 'FECHA', 'MENSAJE']
-    col_widths = [50, 40, 100]
+    col_widths = [25, 20, 55]
     rows = [[r['jobname'], r['rundate'], r['message']] for r in data['failed_jobs']]
     pdf.draw_table(header, rows, col_widths)
     
-    # Return as bytes or save to path
+    # Return as bytes
     return pdf.output()
