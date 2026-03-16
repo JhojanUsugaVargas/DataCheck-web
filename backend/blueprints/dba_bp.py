@@ -10,6 +10,10 @@ from services.dba_queries.job_monitor import query_job_monitor
 from services.dba_queries.alwayson_monitor import query_alwayson_status
 from services.dba_queries.databases_monitor import query_databases
 from services.dba_queries.backup_monitor import query_backup_status
+from services.dba_queries.resource_history import query_resource_history
+from services.dba_queries.transactions_monitor import query_transactions
+from services.dba_queries.services_status import query_services_status
+from services.dba_queries.top_cpu_queries import query_top_cpu
 import re
 
 dba_bp = Blueprint('dba', __name__)
@@ -330,6 +334,101 @@ def action_backups():
         if conn: conn.close()
         return jsonify({'type': 'error', 'message': f'❌ Error al validar backups: {str(e)}'})
 
+@dba_bp.route('/api/resource_chart')
+@login_required
+def action_resource_chart():
+    """Obtiene datos históricos de CPU y Memoria para gráfico de líneas."""
+    conn = get_active_conn()
+    if not conn:
+        return jsonify({'type': 'error', 'message': '❌ Error al conectar a la base de datos.'})
+
+    try:
+        cursor = conn.cursor()
+        data = query_resource_history(cursor)
+        conn.close()
+        return jsonify({
+            'type': 'resource_chart',
+            'title': '📈 Consumo de Recursos (CPU & Memoria)',
+            'data': data
+        })
+    except Exception as e:
+        if conn: conn.close()
+        return jsonify({'type': 'error', 'message': f'❌ Error al consultar recursos: {str(e)}'})
+
+@dba_bp.route('/api/transactions')
+@login_required
+def action_transactions():
+    """Monitor de transacciones por base de datos."""
+    conn = get_active_conn()
+    if not conn:
+        return jsonify({'type': 'error', 'message': '❌ Error al conectar a la base de datos.'})
+
+    try:
+        cursor = conn.cursor()
+        data = query_transactions(cursor)
+        conn.close()
+
+        if not data:
+            return jsonify({'type': 'success', 'message': '✅ No se encontraron transacciones activas.'})
+
+        return jsonify({
+            'type': 'transactions_monitor',
+            'title': '🔄 Transacciones por Base de Datos',
+            'data': data
+        })
+    except Exception as e:
+        if conn: conn.close()
+        return jsonify({'type': 'error', 'message': f'❌ Error al consultar transacciones: {str(e)}'})
+
+@dba_bp.route('/api/services_status')
+@login_required
+def action_services_status():
+    """Estado de servicios SQL Server y Agent."""
+    conn = get_active_conn()
+    if not conn:
+        return jsonify({'type': 'error', 'message': '❌ Error al conectar a la base de datos.'})
+
+    try:
+        cursor = conn.cursor()
+        data = query_services_status(cursor)
+        conn.close()
+
+        if not data:
+            return jsonify({'type': 'success', 'message': '⚠️ No se pudo obtener información de servicios.'})
+
+        return jsonify({
+            'type': 'services_status',
+            'title': '🟢 Estado de Servicios SQL',
+            'data': data
+        })
+    except Exception as e:
+        if conn: conn.close()
+        return jsonify({'type': 'error', 'message': f'❌ Error al consultar servicios: {str(e)}'})
+
+@dba_bp.route('/api/top_cpu_queries')
+@login_required
+def action_top_cpu_queries():
+    """Top 5 queries más costosas en CPU."""
+    conn = get_active_conn()
+    if not conn:
+        return jsonify({'type': 'error', 'message': '❌ Error al conectar a la base de datos.'})
+
+    try:
+        cursor = conn.cursor()
+        data = query_top_cpu(cursor)
+        conn.close()
+
+        if not data:
+            return jsonify({'type': 'success', 'message': '✅ No se encontraron queries con alto consumo de CPU.'})
+
+        return jsonify({
+            'type': 'top_cpu_queries',
+            'title': '🔥 Top 5 Queries por CPU',
+            'data': data
+        })
+    except Exception as e:
+        if conn: conn.close()
+        return jsonify({'type': 'error', 'message': f'❌ Error al consultar top CPU queries: {str(e)}'})
 @dba_bp.route('/api/tempdb/shrink')
 @login_required
 @role_required('DBA')

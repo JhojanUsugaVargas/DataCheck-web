@@ -88,7 +88,11 @@ function sendAction(action) {
         'alwayson': '🔗 Always On Availability Groups',
         'databases': '🗄️ Bases de Datos',
         'backups': '💾 Validar Backups',
-        'soporte': '🆘 Solicitud de Soporte'
+        'soporte': '🆘 Solicitud de Soporte',
+        'resource_chart': '📈 Consumo de Recursos',
+        'transactions': '🔄 Transacciones por BD',
+        'services_status': '🟢 Estado de Servicios',
+        'top_cpu_queries': '🔥 Top 5 CPU Queries'
     };
 
     if (action === 'soporte') {
@@ -190,6 +194,22 @@ function renderResponse(data) {
 
         case 'ai':
             addBotMessage(data.message, null, data.source);
+            break;
+
+        case 'resource_chart':
+            renderResourceChart(data.title, data.data);
+            break;
+
+        case 'transactions_monitor':
+            renderTransactions(data.title, data.data);
+            break;
+
+        case 'services_status':
+            renderServicesStatus(data.title, data.data);
+            break;
+
+        case 'top_cpu_queries':
+            renderTopCPUQueries(data.title, data.data);
             break;
 
         case 'prompt':
@@ -1416,3 +1436,318 @@ async function submitSoporte(e) {
         block();
     } catch (err) { }
 })();
+
+// ── Dashboards Hub Modal ──
+function openDashboardsHub() {
+    document.getElementById('dashboardsHubModal').style.display = 'flex';
+}
+
+function closeDashboardsHub() {
+    document.getElementById('dashboardsHubModal').style.display = 'none';
+}
+
+// ── Render Resource Chart (CPU & Memory Line Chart with Chart.js) ──
+function renderResourceChart(title, data) {
+    const container = document.getElementById('chatMessages');
+    clearWelcome();
+
+    const msgEl = document.createElement('div');
+    msgEl.className = 'message bot';
+
+    const avatar = document.createElement('div');
+    avatar.className = 'msg-avatar';
+    avatar.textContent = '🤖';
+
+    const content = document.createElement('div');
+    content.className = 'msg-content monitor-dashboard';
+
+    const canvasId = 'resourceChart_' + Date.now();
+    const memColor = data.memory_percent > 80 ? '#ef4444' : data.memory_percent > 50 ? '#f59e0b' : '#10b981';
+
+    content.innerHTML = `
+        <div class="monitor-header">
+            <span class="monitor-title">${title}</span>
+        </div>
+        <div class="resource-chart-container">
+            <canvas id="${canvasId}"></canvas>
+        </div>
+        <div class="resource-chart-summary">
+            <div class="resource-summary-card">
+                <div class="resource-summary-icon" style="background:rgba(99,102,241,0.15); color:#818cf8">🖥️</div>
+                <div class="resource-summary-info">
+                    <div class="resource-summary-value">${data.sql_cpu.length > 0 ? data.sql_cpu[data.sql_cpu.length - 1] : 0}%</div>
+                    <div class="resource-summary-label">CPU SQL Actual</div>
+                </div>
+            </div>
+            <div class="resource-summary-card">
+                <div class="resource-summary-icon" style="background:rgba(16,185,129,0.15); color:${memColor}">🧠</div>
+                <div class="resource-summary-info">
+                    <div class="resource-summary-value" style="color:${memColor}">${data.memory_percent}%</div>
+                    <div class="resource-summary-label">Memoria en Uso</div>
+                </div>
+            </div>
+            <div class="resource-summary-card">
+                <div class="resource-summary-icon" style="background:rgba(245,158,11,0.15); color:#f59e0b">📊</div>
+                <div class="resource-summary-info">
+                    <div class="resource-summary-value">${data.memory_used_mb.toLocaleString()} MB</div>
+                    <div class="resource-summary-label">de ${data.memory_total_mb.toLocaleString()} MB</div>
+                </div>
+            </div>
+        </div>
+    `;
+
+    msgEl.appendChild(avatar);
+    msgEl.appendChild(content);
+    container.appendChild(msgEl);
+    scrollToBottom();
+
+    // Render Chart.js line chart
+    setTimeout(() => {
+        const ctx = document.getElementById(canvasId);
+        if (!ctx) return;
+
+        const isDark = !document.body.classList.contains('light-mode');
+        const gridColor = isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.08)';
+        const textColor = isDark ? 'rgba(255,255,255,0.7)' : 'rgba(0,0,0,0.7)';
+
+        new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: data.timestamps,
+                datasets: [
+                    {
+                        label: 'CPU SQL Server (%)',
+                        data: data.sql_cpu,
+                        borderColor: '#6366f1',
+                        backgroundColor: 'rgba(99, 102, 241, 0.1)',
+                        borderWidth: 2.5,
+                        fill: true,
+                        tension: 0.4,
+                        pointRadius: 2,
+                        pointHoverRadius: 5,
+                        pointBackgroundColor: '#6366f1'
+                    },
+                    {
+                        label: 'CPU Otros (%)',
+                        data: data.other_cpu,
+                        borderColor: '#8b5cf6',
+                        backgroundColor: 'rgba(139, 92, 246, 0.05)',
+                        borderWidth: 1.5,
+                        fill: true,
+                        tension: 0.4,
+                        pointRadius: 1,
+                        pointHoverRadius: 4,
+                        pointBackgroundColor: '#8b5cf6',
+                        borderDash: [5, 5]
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                interaction: { intersect: false, mode: 'index' },
+                plugins: {
+                    legend: {
+                        labels: { color: textColor, font: { family: 'Inter', size: 11 }, usePointStyle: true, pointStyle: 'circle' }
+                    },
+                    tooltip: {
+                        backgroundColor: isDark ? 'rgba(30,30,40,0.95)' : 'rgba(255,255,255,0.95)',
+                        titleColor: isDark ? '#fff' : '#111',
+                        bodyColor: isDark ? '#ddd' : '#333',
+                        borderColor: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)',
+                        borderWidth: 1,
+                        cornerRadius: 8,
+                        padding: 10,
+                        titleFont: { family: 'Inter', weight: '600' },
+                        bodyFont: { family: 'Inter' }
+                    }
+                },
+                scales: {
+                    x: {
+                        grid: { color: gridColor },
+                        ticks: { color: textColor, font: { family: 'Inter', size: 10 }, maxRotation: 45 }
+                    },
+                    y: {
+                        min: 0, max: 100,
+                        grid: { color: gridColor },
+                        ticks: { color: textColor, font: { family: 'Inter', size: 10 }, callback: v => v + '%' }
+                    }
+                }
+            }
+        });
+    }, 100);
+}
+
+// ── Render Transactions Monitor ──
+function renderTransactions(title, data) {
+    const container = document.getElementById('chatMessages');
+    clearWelcome();
+
+    const msgEl = document.createElement('div');
+    msgEl.className = 'message bot';
+
+    const avatar = document.createElement('div');
+    avatar.className = 'msg-avatar';
+    avatar.textContent = '🤖';
+
+    const content = document.createElement('div');
+    content.className = 'msg-content monitor-dashboard';
+
+    const maxTx = Math.max(...data.map(d => d.transactions_sec), 1);
+
+    let cardsHtml = '';
+    data.forEach(db => {
+        const txPct = Math.min((db.transactions_sec / maxTx) * 100, 100);
+        const activeColor = db.active_transactions > 10 ? '#ef4444' : db.active_transactions > 5 ? '#f59e0b' : '#10b981';
+
+        cardsHtml += `
+            <div class="transaction-card">
+                <div class="transaction-header">
+                    <span class="transaction-db-name">🗄️ ${db.database}</span>
+                    <span class="transaction-active" style="color:${activeColor}">${db.active_transactions} activas</span>
+                </div>
+                <div class="transaction-bar-container">
+                    <div class="transaction-bar" style="width:${txPct}%; background: linear-gradient(90deg, #6366f1, #818cf8)"></div>
+                </div>
+                <div class="transaction-metrics">
+                    <div class="tx-metric">
+                        <span class="tx-metric-value">${db.transactions_sec.toLocaleString()}</span>
+                        <span class="tx-metric-label">Trans/seg</span>
+                    </div>
+                    <div class="tx-metric">
+                        <span class="tx-metric-value">${db.log_flushes_sec.toLocaleString()}</span>
+                        <span class="tx-metric-label">Log Flush/seg</span>
+                    </div>
+                </div>
+            </div>
+        `;
+    });
+
+    content.innerHTML = `
+        <div class="monitor-header"><span class="monitor-title">${title}</span></div>
+        <div class="transactions-grid">${cardsHtml}</div>
+    `;
+
+    msgEl.appendChild(avatar);
+    msgEl.appendChild(content);
+    container.appendChild(msgEl);
+    scrollToBottom();
+}
+
+// ── Render Services Status ──
+function renderServicesStatus(title, data) {
+    const container = document.getElementById('chatMessages');
+    clearWelcome();
+
+    const msgEl = document.createElement('div');
+    msgEl.className = 'message bot';
+
+    const avatar = document.createElement('div');
+    avatar.className = 'msg-avatar';
+    avatar.textContent = '🤖';
+
+    const content = document.createElement('div');
+    content.className = 'msg-content monitor-dashboard';
+
+    let cardsHtml = '';
+    data.forEach(svc => {
+        const statusBg = svc.status_class === 'running' ? 'rgba(16,185,129,0.12)'
+            : svc.status_class === 'stopped' ? 'rgba(239,68,68,0.12)'
+            : 'rgba(245,158,11,0.12)';
+        const statusBorder = svc.status_class === 'running' ? 'rgba(16,185,129,0.3)'
+            : svc.status_class === 'stopped' ? 'rgba(239,68,68,0.3)'
+            : 'rgba(245,158,11,0.3)';
+
+        cardsHtml += `
+            <div class="service-card" style="background:${statusBg}; border-color:${statusBorder}">
+                <div class="service-card-header">
+                    <span class="service-status-icon">${svc.status_icon}</span>
+                    <div class="service-card-title">
+                        <div class="service-name">${svc.servicetype}</div>
+                        <div class="service-status-text">${svc.statusdesc}</div>
+                    </div>
+                </div>
+                <div class="service-details">
+                    <div class="service-detail-row">
+                        <span class="service-detail-label">Inicio:</span>
+                        <span class="service-detail-value">${svc.startuptype}</span>
+                    </div>
+                    <div class="service-detail-row">
+                        <span class="service-detail-label">Cuenta:</span>
+                        <span class="service-detail-value" style="font-size:11px">${svc.serviceaccount}</span>
+                    </div>
+                    <div class="service-detail-row">
+                        <span class="service-detail-label">PID:</span>
+                        <span class="service-detail-value">${svc.processid}</span>
+                    </div>
+                    <div class="service-detail-row">
+                        <span class="service-detail-label">Último inicio:</span>
+                        <span class="service-detail-value">${svc.laststartup || 'N/A'}</span>
+                    </div>
+                </div>
+            </div>
+        `;
+    });
+
+    content.innerHTML = `
+        <div class="monitor-header"><span class="monitor-title">${title}</span></div>
+        <div class="services-grid">${cardsHtml}</div>
+    `;
+
+    msgEl.appendChild(avatar);
+    msgEl.appendChild(content);
+    container.appendChild(msgEl);
+    scrollToBottom();
+}
+
+// ── Render Top CPU Queries ──
+function renderTopCPUQueries(title, data) {
+    const container = document.getElementById('chatMessages');
+    clearWelcome();
+
+    const msgEl = document.createElement('div');
+    msgEl.className = 'message bot';
+
+    const avatar = document.createElement('div');
+    avatar.className = 'msg-avatar';
+    avatar.textContent = '🤖';
+
+    const content = document.createElement('div');
+    content.className = 'msg-content monitor-dashboard';
+
+    let cardsHtml = '';
+    data.forEach((q, idx) => {
+        const cpuColor = q.cpu_percent > 80 ? '#ef4444' : q.cpu_percent > 50 ? '#f59e0b' : '#6366f1';
+        const cpuMs = q.total_cpu_ms;
+        const cpuFormatted = cpuMs >= 60000 ? (cpuMs / 60000).toFixed(1) + ' min' : cpuMs >= 1000 ? (cpuMs / 1000).toFixed(1) + ' seg' : cpuMs + ' ms';
+
+        cardsHtml += `
+            <div class="cpu-query-card">
+                <div class="cpu-query-header">
+                    <span class="cpu-query-rank">#${idx + 1}</span>
+                    <span class="cpu-query-db">🗄️ ${q.database}</span>
+                    <span class="cpu-query-cpu" style="color:${cpuColor}">${cpuFormatted}</span>
+                </div>
+                <div class="cpu-query-bar-container">
+                    <div class="cpu-query-bar" style="width:${q.cpu_percent}%; background: linear-gradient(90deg, ${cpuColor}, ${cpuColor}88)"></div>
+                </div>
+                <div class="cpu-query-text"><code>${q.query_text}</code></div>
+                <div class="cpu-query-metrics">
+                    <span>⚡ ${q.execution_count.toLocaleString()} ejecuciones</span>
+                    <span>⏱️ Avg: ${q.avg_cpu_ms.toLocaleString()} ms</span>
+                    <span>📅 ${q.last_execution}</span>
+                </div>
+            </div>
+        `;
+    });
+
+    content.innerHTML = `
+        <div class="monitor-header"><span class="monitor-title">${title}</span></div>
+        <div class="cpu-queries-list">${cardsHtml}</div>
+    `;
+
+    msgEl.appendChild(avatar);
+    msgEl.appendChild(content);
+    container.appendChild(msgEl);
+    scrollToBottom();
+}

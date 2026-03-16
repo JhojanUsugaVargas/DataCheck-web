@@ -11,6 +11,7 @@
         href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap"
         rel="stylesheet">
     <link rel="stylesheet" href="{{ APP_BASE_URL }}/static/style.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
     <script>
         window.API_BASE = "{{ APP_BASE_URL }}";
         window.currentContractId = "{{ current_contract_id }}";
@@ -157,6 +158,11 @@
                 <button class="action-btn" onclick="sendAction('backups')">
                     <span class="action-icon">💾</span>
                     <span>Validar Backups</span>
+                </button>
+
+                <button class="action-btn dashboards-hub-btn" onclick="openDashboardsHub()">
+                    <span class="action-icon">📊</span>
+                    <span>Dashboards</span>
                 </button>
 
                 {% if is_dba %}
@@ -553,6 +559,50 @@
                 </div>
                 <button type="submit" class="save-btn" id="soporteBtn">Enviar Solicitud</button>
             </form>
+        </div>
+    </div>
+
+    <!-- Dashboards Hub Modal -->
+    <div id="dashboardsHubModal" class="modal-overlay" style="display:none;">
+        <div class="modal-content dashboards-hub-modal">
+            <div class="modal-header">
+                <h3>📊 Dashboards de Monitoreo</h3>
+                <button class="modal-close" onclick="closeDashboardsHub()">&times;</button>
+            </div>
+            <div class="dashboards-hub-grid">
+                <div class="dashboard-hub-card" onclick="closeDashboardsHub(); sendAction('resource_chart')">
+                    <div class="hub-card-icon" style="background: linear-gradient(135deg, #6366f1, #8b5cf6);">📈</div>
+                    <div class="hub-card-info">
+                        <div class="hub-card-title">Consumo de Recursos</div>
+                        <div class="hub-card-desc">Gráfico de líneas de CPU y Memoria histórico de la instancia</div>
+                    </div>
+                    <div class="hub-card-arrow">→</div>
+                </div>
+                <div class="dashboard-hub-card" onclick="closeDashboardsHub(); sendAction('transactions')">
+                    <div class="hub-card-icon" style="background: linear-gradient(135deg, #10b981, #34d399);">🔄</div>
+                    <div class="hub-card-info">
+                        <div class="hub-card-title">Transacciones por BD</div>
+                        <div class="hub-card-desc">Métricas de transacciones activas y rates por base de datos</div>
+                    </div>
+                    <div class="hub-card-arrow">→</div>
+                </div>
+                <div class="dashboard-hub-card" onclick="closeDashboardsHub(); sendAction('services_status')">
+                    <div class="hub-card-icon" style="background: linear-gradient(135deg, #f59e0b, #fbbf24);">🟢</div>
+                    <div class="hub-card-info">
+                        <div class="hub-card-title">Estado de Servicios</div>
+                        <div class="hub-card-desc">Estado de SQL Server Engine y SQL Server Agent</div>
+                    </div>
+                    <div class="hub-card-arrow">→</div>
+                </div>
+                <div class="dashboard-hub-card" onclick="closeDashboardsHub(); sendAction('top_cpu_queries')">
+                    <div class="hub-card-icon" style="background: linear-gradient(135deg, #ef4444, #f87171);">🔥</div>
+                    <div class="hub-card-info">
+                        <div class="hub-card-title">Top 5 CPU Queries</div>
+                        <div class="hub-card-desc">Las consultas más costosas en CPU de la instancia</div>
+                    </div>
+                    <div class="hub-card-arrow">→</div>
+                </div>
+            </div>
         </div>
     </div>
 

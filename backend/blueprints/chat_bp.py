@@ -45,7 +45,8 @@ def handle_action_dispatcher(action, extra_data=''):
     from blueprints.dba_bp import (
         action_status, action_bloqueos, action_cpu, action_whoisactive, 
         action_discos, action_tempdb, action_performance, action_datalog, 
-        action_cancelar, action_tempdb_shrink, action_jobs, action_alwayson, action_databases, action_backups
+        action_cancelar, action_tempdb_shrink, action_jobs, action_alwayson, action_databases, action_backups,
+        action_resource_chart, action_transactions, action_services_status, action_top_cpu_queries
     )
     
     handlers = {
@@ -63,6 +64,10 @@ def handle_action_dispatcher(action, extra_data=''):
         'alwayson': lambda: action_alwayson().get_json(),
         'databases': lambda: action_databases().get_json(),
         'backups': lambda: action_backups().get_json(),
+        'resource_chart': lambda: action_resource_chart().get_json(),
+        'transactions': lambda: action_transactions().get_json(),
+        'services_status': lambda: action_services_status().get_json(),
+        'top_cpu_queries': lambda: action_top_cpu_queries().get_json(),
     }
     
     handler = handlers.get(action)
