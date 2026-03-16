@@ -86,6 +86,14 @@ def index():
                            current_instance_id=current_instance_id,
                            mfa_enabled=session.get('mfa_enabled', False))
 
+@app.route('/dashboards')
+@login_required
+def dashboards():
+    return render_template('dashboards.html',
+                           username=session.get('username', 'Usuario'),
+                           full_name=session.get('full_name', 'Usuario'),
+                           role=session.get('role', 'Monitor'))
+
 @app.route('/api/instances')
 @login_required
 def api_get_instances():
@@ -180,13 +188,18 @@ def serve_external_img(filename):
     
     # Intentar en la ruta absoluta especificada por el usuario (Linux/Docker style)
     external_path = "/app/datacheck/img"
-    if os.path.exists(external_path):
+    if os.path.exists(os.path.join(external_path, filename)):
         return send_from_directory(external_path, filename)
     
     # Fallback a Windows si aplica
     win_path = "C:\\app\\datacheck\\img"
-    if os.path.exists(win_path):
+    if os.path.exists(os.path.join(win_path, filename)):
         return send_from_directory(win_path, filename)
+    
+    # Fallback al directorio estático del proyecto
+    static_img_path = os.path.join(os.path.dirname(__file__), '..', 'frontend', 'static', 'img')
+    if os.path.exists(os.path.join(static_img_path, filename)):
+        return send_from_directory(os.path.abspath(static_img_path), filename)
         
     return jsonify({'error': 'Imagen no encontrada'}), 404
 

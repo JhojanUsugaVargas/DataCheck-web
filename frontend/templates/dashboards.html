@@ -1,0 +1,553 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DataCheck — Dashboards de Monitoreo</title>
+    <link rel="icon" type="image/png" href="{{ APP_BASE_URL }}/img/Isotipo%20ARUS.png">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ APP_BASE_URL }}/static/style.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
+    <script>
+        window.API_BASE = "{{ APP_BASE_URL }}";
+    </script>
+    <style>
+        /* ── Dashboards Page Layout ── */
+        .dashboards-page {
+            min-height: 100vh;
+            background: var(--bg-primary);
+            color: var(--text-primary);
+            font-family: var(--font-body);
+        }
+
+        .dashboards-topbar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 14px 24px;
+            background: var(--bg-secondary);
+            border-bottom: 1px solid var(--border-subtle);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            backdrop-filter: blur(12px);
+        }
+
+        .topbar-left {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .topbar-back {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            padding: 8px 14px;
+            border-radius: 8px;
+            background: var(--bg-input);
+            border: 1px solid var(--border-subtle);
+            color: var(--text-primary);
+            cursor: pointer;
+            font-size: 13px;
+            font-weight: 500;
+            font-family: var(--font-body);
+            transition: all 0.2s;
+            text-decoration: none;
+        }
+
+        .topbar-back:hover {
+            background: var(--bg-card);
+            border-color: var(--accent);
+            color: var(--accent-light);
+        }
+
+        .topbar-title {
+            font-size: 18px;
+            font-weight: 700;
+            color: var(--text-primary);
+        }
+
+        .topbar-right {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .topbar-user {
+            font-size: 13px;
+            color: var(--text-secondary);
+        }
+
+        .topbar-refresh {
+            padding: 8px 14px;
+            border-radius: 8px;
+            background: linear-gradient(135deg, var(--accent), #8b5cf6);
+            border: none;
+            color: #fff;
+            cursor: pointer;
+            font-size: 13px;
+            font-weight: 600;
+            font-family: var(--font-body);
+            transition: all 0.2s;
+        }
+
+        .topbar-refresh:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 16px rgba(99, 102, 241, 0.35);
+        }
+
+        .topbar-refresh:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .dashboards-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+            padding: 20px 24px;
+            max-width: 1600px;
+            margin: 0 auto;
+        }
+
+        .dashboard-panel {
+            background: var(--bg-secondary);
+            border: 1px solid var(--border-subtle);
+            border-radius: 16px;
+            padding: 20px;
+            min-height: 320px;
+            position: relative;
+            overflow: hidden;
+            transition: all 0.3s;
+        }
+
+        .dashboard-panel:hover {
+            border-color: rgba(99, 102, 241, 0.25);
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+        }
+
+        .dashboard-panel-header {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 16px;
+            padding-bottom: 12px;
+            border-bottom: 1px solid var(--border-subtle);
+        }
+
+        .panel-icon {
+            width: 36px;
+            height: 36px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+            flex-shrink: 0;
+        }
+
+        .panel-title {
+            font-weight: 600;
+            font-size: 15px;
+            color: var(--text-primary);
+        }
+
+        .panel-loading {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 200px;
+            color: var(--text-muted);
+            font-size: 13px;
+        }
+
+        .panel-loading .spinner {
+            width: 24px;
+            height: 24px;
+            border: 2px solid var(--border-subtle);
+            border-top-color: var(--accent);
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+            margin-right: 10px;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .panel-error {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 200px;
+            color: var(--red);
+            font-size: 13px;
+            text-align: center;
+        }
+
+        /* Full width for queries panel */
+        .dashboard-panel.full-width {
+            grid-column: 1 / -1;
+        }
+
+        /* Chart container inside panel */
+        .panel-chart-container {
+            width: 100%;
+            height: 250px;
+            position: relative;
+        }
+
+        @media (max-width: 900px) {
+            .dashboards-grid {
+                grid-template-columns: 1fr;
+                padding: 12px;
+            }
+
+            .dashboards-topbar {
+                padding: 12px 16px;
+            }
+
+            .topbar-title {
+                font-size: 15px;
+            }
+
+            .panel-chart-container {
+                height: 200px;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div class="dashboards-page">
+        <!-- Top Bar -->
+        <div class="dashboards-topbar">
+            <div class="topbar-left">
+                <a href="{{ APP_BASE_URL }}/" class="topbar-back">← Volver</a>
+                <span class="topbar-title">📊 Dashboards de Monitoreo</span>
+            </div>
+            <div class="topbar-right">
+                <span class="topbar-user">👤 {{ full_name }}</span>
+                <button class="topbar-refresh" onclick="loadAllDashboards()" id="refreshBtn">🔄 Actualizar</button>
+            </div>
+        </div>
+
+        <!-- Dashboards Grid -->
+        <div class="dashboards-grid">
+            <!-- 1. Resource Chart (CPU & Memory) -->
+            <div class="dashboard-panel" id="panelResources">
+                <div class="dashboard-panel-header">
+                    <div class="panel-icon" style="background: linear-gradient(135deg, #6366f1, #8b5cf6);">📈</div>
+                    <span class="panel-title">Consumo de Recursos (CPU & Memoria)</span>
+                </div>
+                <div id="resourceContent">
+                    <div class="panel-loading"><div class="spinner"></div> Cargando recursos...</div>
+                </div>
+            </div>
+
+            <!-- 2. Services Status -->
+            <div class="dashboard-panel" id="panelServices">
+                <div class="dashboard-panel-header">
+                    <div class="panel-icon" style="background: linear-gradient(135deg, #f59e0b, #fbbf24);">🟢</div>
+                    <span class="panel-title">Estado de Servicios SQL</span>
+                </div>
+                <div id="servicesContent">
+                    <div class="panel-loading"><div class="spinner"></div> Cargando servicios...</div>
+                </div>
+            </div>
+
+            <!-- 3. Transactions -->
+            <div class="dashboard-panel" id="panelTransactions">
+                <div class="dashboard-panel-header">
+                    <div class="panel-icon" style="background: linear-gradient(135deg, #10b981, #34d399);">🔄</div>
+                    <span class="panel-title">Transacciones por Base de Datos</span>
+                </div>
+                <div id="transactionsContent">
+                    <div class="panel-loading"><div class="spinner"></div> Cargando transacciones...</div>
+                </div>
+            </div>
+
+            <!-- 4. Top CPU Queries (full width) -->
+            <div class="dashboard-panel full-width" id="panelCPU">
+                <div class="dashboard-panel-header">
+                    <div class="panel-icon" style="background: linear-gradient(135deg, #ef4444, #f87171);">🔥</div>
+                    <span class="panel-title">Top 5 Consultas más Pesadas en CPU</span>
+                </div>
+                <div id="cpuContent">
+                    <div class="panel-loading"><div class="spinner"></div> Cargando consultas...</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ── Theme inheritance ──
+        (function() {
+            const savedTheme = localStorage.getItem('theme');
+            if (savedTheme === 'light') {
+                document.body.classList.add('light-mode');
+            }
+        })();
+
+        // ── API Helper ──
+        async function fetchDashboard(action) {
+            const res = await fetch(window.API_BASE + '/api/chat', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ action: action })
+            });
+            if (res.status === 401) {
+                window.location.href = window.API_BASE + '/login';
+                return null;
+            }
+            return await res.json();
+        }
+
+        // ── Load All Dashboards ──
+        async function loadAllDashboards() {
+            const btn = document.getElementById('refreshBtn');
+            btn.disabled = true;
+            btn.textContent = '⏳ Cargando...';
+
+            await Promise.all([
+                loadResourceChart(),
+                loadServicesStatus(),
+                loadTransactions(),
+                loadTopCPUQueries()
+            ]);
+
+            btn.disabled = false;
+            btn.textContent = '🔄 Actualizar';
+        }
+
+        // ── 1. Resource Chart ──
+        async function loadResourceChart() {
+            const container = document.getElementById('resourceContent');
+            try {
+                const data = await fetchDashboard('resource_chart');
+                if (!data || data.type === 'error') {
+                    container.innerHTML = `<div class="panel-error">❌ ${data?.message || 'Error al cargar'}</div>`;
+                    return;
+                }
+
+                const d = data.data;
+                const memColor = d.memory_percent > 80 ? '#ef4444' : d.memory_percent > 50 ? '#f59e0b' : '#10b981';
+
+                container.innerHTML = `
+                    <div class="panel-chart-container">
+                        <canvas id="resourceChartCanvas"></canvas>
+                    </div>
+                    <div class="resource-chart-summary" style="margin-top:12px">
+                        <div class="resource-summary-card">
+                            <div class="resource-summary-icon" style="background:rgba(99,102,241,0.15); color:#818cf8">🖥️</div>
+                            <div class="resource-summary-info">
+                                <div class="resource-summary-value">${d.sql_cpu.length > 0 ? d.sql_cpu[d.sql_cpu.length - 1] : 0}%</div>
+                                <div class="resource-summary-label">CPU SQL Actual</div>
+                            </div>
+                        </div>
+                        <div class="resource-summary-card">
+                            <div class="resource-summary-icon" style="background:rgba(16,185,129,0.15); color:${memColor}">🧠</div>
+                            <div class="resource-summary-info">
+                                <div class="resource-summary-value" style="color:${memColor}">${d.memory_percent}%</div>
+                                <div class="resource-summary-label">Memoria en Uso</div>
+                            </div>
+                        </div>
+                        <div class="resource-summary-card">
+                            <div class="resource-summary-icon" style="background:rgba(245,158,11,0.15); color:#f59e0b">📊</div>
+                            <div class="resource-summary-info">
+                                <div class="resource-summary-value">${d.memory_used_mb.toLocaleString()} MB</div>
+                                <div class="resource-summary-label">de ${d.memory_total_mb.toLocaleString()} MB</div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+
+                // Render Chart
+                setTimeout(() => {
+                    const ctx = document.getElementById('resourceChartCanvas');
+                    if (!ctx) return;
+                    const isDark = !document.body.classList.contains('light-mode');
+                    const gridColor = isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.08)';
+                    const textColor = isDark ? 'rgba(255,255,255,0.7)' : 'rgba(0,0,0,0.7)';
+
+                    new Chart(ctx, {
+                        type: 'line',
+                        data: {
+                            labels: d.timestamps,
+                            datasets: [
+                                {
+                                    label: 'CPU SQL Server (%)',
+                                    data: d.sql_cpu,
+                                    borderColor: '#6366f1',
+                                    backgroundColor: 'rgba(99, 102, 241, 0.1)',
+                                    borderWidth: 2.5, fill: true, tension: 0.4,
+                                    pointRadius: 2, pointHoverRadius: 5, pointBackgroundColor: '#6366f1'
+                                },
+                                {
+                                    label: 'CPU Otros (%)',
+                                    data: d.other_cpu,
+                                    borderColor: '#8b5cf6',
+                                    backgroundColor: 'rgba(139, 92, 246, 0.05)',
+                                    borderWidth: 1.5, fill: true, tension: 0.4,
+                                    pointRadius: 1, pointHoverRadius: 4, pointBackgroundColor: '#8b5cf6',
+                                    borderDash: [5, 5]
+                                }
+                            ]
+                        },
+                        options: {
+                            responsive: true, maintainAspectRatio: false,
+                            interaction: { intersect: false, mode: 'index' },
+                            plugins: {
+                                legend: { labels: { color: textColor, font: { family: 'Inter', size: 11 }, usePointStyle: true } },
+                                tooltip: {
+                                    backgroundColor: isDark ? 'rgba(30,30,40,0.95)' : 'rgba(255,255,255,0.95)',
+                                    titleColor: isDark ? '#fff' : '#111', bodyColor: isDark ? '#ddd' : '#333',
+                                    borderColor: isDark ? 'rgba(255,255,255,0.1)' : 'rgba(0,0,0,0.1)',
+                                    borderWidth: 1, cornerRadius: 8, padding: 10
+                                }
+                            },
+                            scales: {
+                                x: { grid: { color: gridColor }, ticks: { color: textColor, font: { family: 'Inter', size: 10 }, maxRotation: 45 } },
+                                y: { min: 0, max: 100, grid: { color: gridColor }, ticks: { color: textColor, font: { family: 'Inter', size: 10 }, callback: v => v + '%' } }
+                            }
+                        }
+                    });
+                }, 50);
+            } catch (e) {
+                container.innerHTML = `<div class="panel-error">❌ Error de conexión</div>`;
+            }
+        }
+
+        // ── 2. Services Status ──
+        async function loadServicesStatus() {
+            const container = document.getElementById('servicesContent');
+            try {
+                const data = await fetchDashboard('services_status');
+                if (!data || data.type === 'error') {
+                    container.innerHTML = `<div class="panel-error">❌ ${data?.message || 'Error al cargar'}</div>`;
+                    return;
+                }
+                if (data.type === 'success') {
+                    container.innerHTML = `<div class="panel-error">${data.message}</div>`;
+                    return;
+                }
+
+                let html = '<div class="services-grid">';
+                data.data.forEach(svc => {
+                    const bg = svc.status_class === 'running' ? 'rgba(16,185,129,0.12)' : svc.status_class === 'stopped' ? 'rgba(239,68,68,0.12)' : 'rgba(245,158,11,0.12)';
+                    const border = svc.status_class === 'running' ? 'rgba(16,185,129,0.3)' : svc.status_class === 'stopped' ? 'rgba(239,68,68,0.3)' : 'rgba(245,158,11,0.3)';
+                    html += `
+                        <div class="service-card" style="background:${bg}; border-color:${border}">
+                            <div class="service-card-header">
+                                <span class="service-status-icon">${svc.status_icon}</span>
+                                <div class="service-card-title">
+                                    <div class="service-name">${svc.servicetype}</div>
+                                    <div class="service-status-text">${svc.statusdesc}</div>
+                                </div>
+                            </div>
+                            <div class="service-details">
+                                <div class="service-detail-row"><span class="service-detail-label">Inicio:</span><span class="service-detail-value">${svc.startuptype}</span></div>
+                                <div class="service-detail-row"><span class="service-detail-label">Cuenta:</span><span class="service-detail-value" style="font-size:11px">${svc.serviceaccount}</span></div>
+                                <div class="service-detail-row"><span class="service-detail-label">PID:</span><span class="service-detail-value">${svc.processid}</span></div>
+                                <div class="service-detail-row"><span class="service-detail-label">Último inicio:</span><span class="service-detail-value">${svc.laststartup || 'N/A'}</span></div>
+                            </div>
+                        </div>`;
+                });
+                html += '</div>';
+                container.innerHTML = html;
+            } catch (e) {
+                container.innerHTML = `<div class="panel-error">❌ Error de conexión</div>`;
+            }
+        }
+
+        // ── 3. Transactions ──
+        async function loadTransactions() {
+            const container = document.getElementById('transactionsContent');
+            try {
+                const data = await fetchDashboard('transactions');
+                if (!data || data.type === 'error') {
+                    container.innerHTML = `<div class="panel-error">❌ ${data?.message || 'Error al cargar'}</div>`;
+                    return;
+                }
+                if (data.type === 'success') {
+                    container.innerHTML = `<div class="panel-error" style="color:var(--green)">${data.message}</div>`;
+                    return;
+                }
+
+                const maxTx = Math.max(...data.data.map(d => d.transactions_sec), 1);
+                let html = '<div class="transactions-grid">';
+                data.data.forEach(db => {
+                    const pct = Math.min((db.transactions_sec / maxTx) * 100, 100);
+                    const clr = db.active_transactions > 10 ? '#ef4444' : db.active_transactions > 5 ? '#f59e0b' : '#10b981';
+                    html += `
+                        <div class="transaction-card">
+                            <div class="transaction-header">
+                                <span class="transaction-db-name">🗄️ ${db.database}</span>
+                                <span class="transaction-active" style="color:${clr}">${db.active_transactions} activas</span>
+                            </div>
+                            <div class="transaction-bar-container"><div class="transaction-bar" style="width:${pct}%; background:linear-gradient(90deg,#6366f1,#818cf8)"></div></div>
+                            <div class="transaction-metrics">
+                                <div class="tx-metric"><span class="tx-metric-value">${db.transactions_sec.toLocaleString()}</span><span class="tx-metric-label">Trans/seg</span></div>
+                                <div class="tx-metric"><span class="tx-metric-value">${db.log_flushes_sec.toLocaleString()}</span><span class="tx-metric-label">Log Flush/seg</span></div>
+                            </div>
+                        </div>`;
+                });
+                html += '</div>';
+                container.innerHTML = html;
+            } catch (e) {
+                container.innerHTML = `<div class="panel-error">❌ Error de conexión</div>`;
+            }
+        }
+
+        // ── 4. Top CPU Queries ──
+        async function loadTopCPUQueries() {
+            const container = document.getElementById('cpuContent');
+            try {
+                const data = await fetchDashboard('top_cpu_queries');
+                if (!data || data.type === 'error') {
+                    container.innerHTML = `<div class="panel-error">❌ ${data?.message || 'Error al cargar'}</div>`;
+                    return;
+                }
+                if (data.type === 'success') {
+                    container.innerHTML = `<div class="panel-error" style="color:var(--green)">${data.message}</div>`;
+                    return;
+                }
+
+                let html = '<div class="cpu-queries-list">';
+                data.data.forEach((q, idx) => {
+                    const clr = q.cpu_percent > 80 ? '#ef4444' : q.cpu_percent > 50 ? '#f59e0b' : '#6366f1';
+                    const ms = q.total_cpu_ms;
+                    const fmt = ms >= 60000 ? (ms / 60000).toFixed(1) + ' min' : ms >= 1000 ? (ms / 1000).toFixed(1) + ' seg' : ms + ' ms';
+                    html += `
+                        <div class="cpu-query-card">
+                            <div class="cpu-query-header">
+                                <span class="cpu-query-rank">#${idx + 1}</span>
+                                <span class="cpu-query-db">🗄️ ${q.database}</span>
+                                <span class="cpu-query-cpu" style="color:${clr}">${fmt}</span>
+                            </div>
+                            <div class="cpu-query-bar-container"><div class="cpu-query-bar" style="width:${q.cpu_percent}%; background:linear-gradient(90deg,${clr},${clr}88)"></div></div>
+                            <div class="cpu-query-text"><code>${q.query_text}</code></div>
+                            <div class="cpu-query-metrics">
+                                <span>⚡ ${q.execution_count.toLocaleString()} ejecuciones</span>
+                                <span>⏱️ Avg: ${q.avg_cpu_ms.toLocaleString()} ms</span>
+                                <span>📅 ${q.last_execution}</span>
+                            </div>
+                        </div>`;
+                });
+                html += '</div>';
+                container.innerHTML = html;
+            } catch (e) {
+                container.innerHTML = `<div class="panel-error">❌ Error de conexión</div>`;
+            }
+        }
+
+        // ── Auto-load on page ready ──
+        document.addEventListener('DOMContentLoaded', loadAllDashboards);
+    </script>
+</body>
+
+</html>
