@@ -12,3 +12,4 @@ pyotp
 qrcode[pil]
 requests
 python-dotenv
+fpdf2

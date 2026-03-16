@@ -134,6 +134,13 @@
                 {% endif %}
 
                 {% if is_dba %}
+                <button class="action-btn" onclick="downloadPMPReport()">
+                    <span class="action-icon">📄</span>
+                    <span>Reporte PMP Consolidado</span>
+                </button>
+                {% endif %}
+                
+                {% if is_dba %}
                 <button class="action-btn" onclick="sendAction('tempdb')">
                     <span class="action-icon">🧹</span>
                     <span>TempDB</span>

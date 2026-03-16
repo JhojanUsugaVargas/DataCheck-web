@@ -1,4 +1,4 @@
-from flask import Blueprint, jsonify, session, request
+from flask import Blueprint, jsonify, session, request, Response
 import logging
 from utils.config import get_db_connection
 from utils.decorators import login_required, role_required
@@ -14,6 +14,8 @@ from services.dba_queries.resource_history import query_resource_history
 from services.dba_queries.transactions_monitor import query_transactions
 from services.dba_queries.services_status import query_services_status
 from services.dba_queries.top_cpu_queries import query_top_cpu
+from services.dba_queries.pmp_report import get_pmp_consolidated_data
+from services.report_generator import generate_pmp_pdf
 import re
 
 dba_bp = Blueprint('dba', __name__)
@@ -569,3 +571,28 @@ def action_db_sizes():
     except Exception as e:
         if conn: conn.close()
         return jsonify({'type': 'error', 'message': f'❌ Error al consultar tamaños: {str(e)}'})
+
+@dba_bp.route('/api/pmp_report')
+@login_required
+@role_required('DBA')
+def action_pmp_report():
+    """Genera y descarga el reporte consolidado PMP en PDF."""
+    conn = get_active_conn()
+    if not conn:
+        return jsonify({'type': 'error', 'message': '❌ Error al conectar a la base de datos.'})
+
+    try:
+        cursor = conn.cursor()
+        data = get_pmp_consolidated_data(cursor)
+        pdf_bytes = generate_pmp_pdf(data)
+        conn.close()
+
+        return Response(
+            pdf_bytes,
+            mimetype="application/pdf",
+            headers={"Content-disposition": "attachment; filename=Reporte_PMP_Consolidado.pdf"}
+        )
+    except Exception as e:
+        if conn: conn.close()
+        logging.error(f"Error generando reporte PMP: {e}")
+        return jsonify({'type': 'error', 'message': f'❌ Error al generar reporte: {str(e)}'}), 500

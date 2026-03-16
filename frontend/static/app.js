@@ -2049,3 +2049,13 @@ async function loadModalTopCPUQueries() {
         container.innerHTML = `<div class="panel-error">❌ Error</div>`;
     }
 }
+
+
+// ── 6. Download PMP Report ──
+function downloadPMPReport() {
+    addBotMessage('Creando reporte consolidado PMP, por favor espere...', 'info');
+    
+    // Abrir en otra pestaña para activar la descarga sin interrumpir el chat
+    const url = window.API_BASE + '/api/pmp_report';
+    window.open(url, '_blank');
+}
