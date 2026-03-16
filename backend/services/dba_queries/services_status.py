@@ -46,7 +46,7 @@ def query_services_status(cursor):
                     startup_type_desc AS StartupType,
                     service_account AS ServiceAccount,
                     process_id AS ProcessId,
-                    last_startup_time AS LastStartup
+                    CAST(last_startup_time AS VARCHAR(30)) AS LastStartup
                 FROM sys.dm_server_services';
         END
         ELSE
@@ -60,7 +60,7 @@ def query_services_status(cursor):
                     startup_type_desc AS StartupType,
                     service_account AS ServiceAccount,
                     process_id AS ProcessId,
-                    last_startup_time AS LastStartup
+                    CAST(last_startup_time AS VARCHAR(30)) AS LastStartup
                 FROM sys.dm_server_services';
         END
 
