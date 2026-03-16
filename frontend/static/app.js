@@ -1953,12 +1953,22 @@ async function loadModalServicesStatus() {
         let html = '<div style="display:grid; grid-template-columns: 1fr 1fr; gap:12px;">';
         data.data.forEach(svc => {
             html += `
-                <div style="padding:12px; background:var(--bg-card); border:1px solid var(--border-subtle); border-radius:10px;">
-                    <div style="display:flex; align-items:center; gap:8px; margin-bottom:8px;">
-                        <span style="font-size:16px;">${svc.status_icon}</span>
-                        <div style="font-weight:600; font-size:13px; line-height:1.2;">${svc.servicetype}</div>
+                <div style="padding:15px; background:var(--bg-card); border:1px solid var(--border-subtle); border-radius:12px; display:flex; flex-direction:column; gap:10px;">
+                    <div style="display:flex; align-items:center; gap:10px;">
+                        <span style="font-size:20px;">${svc.status_icon}</span>
+                        <div style="font-weight:700; font-size:14px; color:var(--text-main); line-height:1.2;">${svc.servicetype}</div>
                     </div>
-                    <div style="font-size:11px; color:var(--text-muted);">${svc.statusdesc}</div>
+                    <div style="display:flex; flex-direction:column; gap:4px; padding-left:30px;">
+                        <div style="font-size:12px; color:var(--text-secondary); font-weight:500;">
+                            Estado: <span class="${svc.status_class}" style="font-weight:600;">${svc.statusdesc}</span>
+                        </div>
+                        <div style="font-size:11px; color:var(--text-muted); display:flex; align-items:center; gap:5px;">
+                            👤 <span style="white-space:nowrap; overflow:hidden; text-overflow:ellipsis;" title="${svc.serviceaccount}">${svc.serviceaccount}</span>
+                        </div>
+                        <div style="font-size:11px; color:var(--text-muted);">
+                            ⚙️ Inicio: ${svc.startuptype}
+                        </div>
+                    </div>
                 </div>`;
         });
         html += '</div>';
