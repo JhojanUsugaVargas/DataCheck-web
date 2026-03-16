@@ -20,14 +20,14 @@ def query_transactions(cursor):
         SET NOCOUNT ON;
 
         SELECT 
-            DB_NAME(dtst.database_id) AS DatabaseName,
+            DB_NAME(dtdt.database_id) AS DatabaseName,
             COUNT(*) AS ActiveTransactions,
             MAX(dtat.transaction_begin_time) AS LastTransactionTime
-        FROM sys.dm_tran_session_transactions dtst
-        INNER JOIN sys.dm_tran_active_transactions dtat ON dtst.transaction_id = dtat.transaction_id
-        WHERE DB_NAME(dtst.database_id) IS NOT NULL
-        AND DB_NAME(dtst.database_id) NOT IN ('tempdb')
-        GROUP BY dtst.database_id
+        FROM sys.dm_tran_database_transactions dtdt
+        INNER JOIN sys.dm_tran_active_transactions dtat ON dtdt.transaction_id = dtat.transaction_id
+        WHERE DB_NAME(dtdt.database_id) IS NOT NULL
+        AND DB_NAME(dtdt.database_id) NOT IN ('tempdb')
+        GROUP BY dtdt.database_id
         ORDER BY COUNT(*) DESC;
     """
     

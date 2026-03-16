@@ -1779,7 +1779,8 @@ async function loadAllDashboardsModal() {
             loadModalResourceChart(),
             loadModalServicesStatus(),
             loadModalTransactions(),
-            loadModalTopCPUQueries()
+            loadModalTopCPUQueries(),
+            loadModalDatabaseSizes()
         ]);
     } catch (err) {
         console.error('Error loading dashboards:', err);
@@ -1788,6 +1789,64 @@ async function loadAllDashboardsModal() {
             btn.disabled = false;
             btn.textContent = '🔄 Actualizar';
         }
+    }
+}
+
+// ── 5. Database Sizes (Modal) ──
+async function loadModalDatabaseSizes() {
+    const container = document.getElementById('modalDBSizeContent');
+    try {
+        const res = await fetch(window.API_BASE + '/api/chat', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ action: 'db_sizes' })
+        });
+        const data = await res.json();
+        
+        if (!data || data.type === 'error' || data.type === 'success') {
+            container.innerHTML = `<div class="panel-error">❌ ${data?.message || 'No hay data'}</div>`;
+            return;
+        }
+
+        const d = data.data;
+        container.innerHTML = '<canvas id="modalDBSizeChartCanvas"></canvas>';
+
+        setTimeout(() => {
+            const ctx = document.getElementById('modalDBSizeChartCanvas');
+            if (!ctx) return;
+            const isDark = !document.body.classList.contains('light-mode');
+            const gridColor = isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.08)';
+            const textColor = isDark ? 'rgba(255,255,255,0.7)' : 'rgba(0,0,0,0.7)';
+
+            if (window.modalDBChartInstance) window.modalDBChartInstance.destroy();
+            window.modalDBChartInstance = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: d.map(x => x.database),
+                    datasets: [{
+                        label: 'Tamaño (MB)',
+                        data: d.map(x => x.size_mb),
+                        backgroundColor: 'rgba(236, 72, 153, 0.6)',
+                        borderColor: '#ec4899',
+                        borderWidth: 1,
+                        borderRadius: 6
+                    }]
+                },
+                options: {
+                    indexAxis: 'y',
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        x: { grid: { color: gridColor }, ticks: { color: textColor, font: { size: 10 } } },
+                        y: { grid: { display: false }, ticks: { color: textColor, font: { size: 10 } } }
+                    }
+                }
+            });
+        }, 50);
+
+    } catch (e) {
+        container.innerHTML = `<div class="panel-error">❌ Error</div>`;
     }
 }
 

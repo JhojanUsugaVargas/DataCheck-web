@@ -544,3 +544,28 @@ def action_cancelar():
     except Exception as e:
         if conn: conn.close()
         return jsonify({'type': 'error', 'message': f'❌ Error al cancelar SPID {spid}: {str(e)}'})
+
+@dba_bp.route('/api/db_sizes')
+@login_required
+def action_db_sizes():
+    """Consulta el peso de las bases de datos."""
+    conn = get_active_conn()
+    if not conn:
+        return jsonify({'type': 'error', 'message': '❌ Error al conectar a la base de datos.'})
+
+    try:
+        cursor = conn.cursor()
+        data = query_database_sizes(cursor)
+        conn.close()
+
+        if not data:
+            return jsonify({'type': 'success', 'message': '⚠️ No se pudo obtener información de tamaños.'})
+
+        return jsonify({
+            'type': 'db_sizes',
+            'title': '📦 Peso de Bases de Datos',
+            'data': data
+        })
+    except Exception as e:
+        if conn: conn.close()
+        return jsonify({'type': 'error', 'message': f'❌ Error al consultar tamaños: {str(e)}'})

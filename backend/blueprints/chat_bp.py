@@ -46,7 +46,7 @@ def handle_action_dispatcher(action, extra_data=''):
         action_status, action_bloqueos, action_cpu, action_whoisactive, 
         action_discos, action_tempdb, action_performance, action_datalog, 
         action_cancelar, action_tempdb_shrink, action_jobs, action_alwayson, action_databases, action_backups,
-        action_resource_chart, action_transactions, action_services_status, action_top_cpu_queries
+        action_resource_chart, action_transactions, action_services_status, action_top_cpu_queries, action_db_sizes
     )
     
     handlers = {
@@ -68,6 +68,7 @@ def handle_action_dispatcher(action, extra_data=''):
         'transactions': lambda: action_transactions().get_json(),
         'services_status': lambda: action_services_status().get_json(),
         'top_cpu_queries': lambda: action_top_cpu_queries().get_json(),
+        'db_sizes': lambda: action_db_sizes().get_json(),
     }
     
     handler = handlers.get(action)
