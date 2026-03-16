@@ -55,8 +55,8 @@ def query_services_status(cursor):
                 SELECT 
                     servicename AS ServiceName,
                     CASE 
-                        WHEN servicename LIKE 'MSSQL%' OR servicename LIKE 'SQL Server (%)' THEN ''SQL Server Engine''
-                        WHEN servicename LIKE 'SQLServerAgent%' OR servicename LIKE 'SQL Agent (%)' THEN ''SQL Server Agent''
+                        WHEN servicename LIKE ''MSSQL%'' OR servicename LIKE ''SQL Server (%)'' THEN ''SQL Server Engine''
+                        WHEN servicename LIKE ''SQLServerAgent%'' OR servicename LIKE ''SQL Agent (%)'' THEN ''SQL Server Agent''
                         ELSE ''SQL Server Service''
                     END AS ServiceType,
                     status AS StatusCode,
