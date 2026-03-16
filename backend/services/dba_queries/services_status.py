@@ -22,41 +22,49 @@ def query_services_status(cursor):
     query = """
         SET NOCOUNT ON;
 
+        DECLARE @has_service_type INT = 0;
         IF EXISTS (SELECT * FROM sys.all_columns WHERE object_id = OBJECT_ID('sys.dm_server_services') AND name = 'service_type')
+            SET @has_service_type = 1;
+
+        DECLARE @sql NVARCHAR(MAX);
+        IF @has_service_type = 1
         BEGIN
-            SELECT 
-                servicename AS ServiceName,
-                CASE 
-                    WHEN service_type = 1 THEN 'SQL Server Engine'
-                    WHEN service_type = 2 THEN 'SQL Server Agent'
-                    WHEN service_type = 3 THEN 'Full-Text Search'
-                    WHEN service_type = 4 THEN 'Integration Services'
-                    WHEN service_type = 5 THEN 'Reporting Services'
-                    WHEN service_type = 6 THEN 'Analysis Services'
-                    ELSE 'Otro (' + CAST(service_type AS VARCHAR) + ')'
-                END AS ServiceType,
-                status AS StatusCode,
-                status_desc AS StatusDesc,
-                startup_type_desc AS StartupType,
-                service_account AS ServiceAccount,
-                process_id AS ProcessId,
-                last_startup_time AS LastStartup
-            FROM sys.dm_server_services;
+            SET @sql = '
+                SELECT 
+                    servicename AS ServiceName,
+                    CASE 
+                        WHEN service_type = 1 THEN ''SQL Server Engine''
+                        WHEN service_type = 2 THEN ''SQL Server Agent''
+                        WHEN service_type = 3 THEN ''Full-Text Search''
+                        WHEN service_type = 4 THEN ''Integration Services''
+                        WHEN service_type = 5 THEN ''Reporting Services''
+                        WHEN service_type = 6 THEN ''Analysis Services''
+                        ELSE ''Otro ('' + CAST(service_type AS VARCHAR) + '')''
+                    END AS ServiceType,
+                    status AS StatusCode,
+                    status_desc AS StatusDesc,
+                    startup_type_desc AS StartupType,
+                    service_account AS ServiceAccount,
+                    process_id AS ProcessId,
+                    last_startup_time AS LastStartup
+                FROM sys.dm_server_services';
         END
         ELSE
         BEGIN
-            -- Fallback para versiones que no tienen service_type
-            SELECT 
-                servicename AS ServiceName,
-                'SQL Server Service' AS ServiceType,
-                status AS StatusCode,
-                status_desc AS StatusDesc,
-                startup_type_desc AS StartupType,
-                service_account AS ServiceAccount,
-                process_id AS ProcessId,
-                last_startup_time AS LastStartup
-            FROM sys.dm_server_services;
+            SET @sql = '
+                SELECT 
+                    servicename AS ServiceName,
+                    ''SQL Server Service'' AS ServiceType,
+                    status AS StatusCode,
+                    status_desc AS StatusDesc,
+                    startup_type_desc AS StartupType,
+                    service_account AS ServiceAccount,
+                    process_id AS ProcessId,
+                    last_startup_time AS LastStartup
+                FROM sys.dm_server_services';
         END
+
+        EXEC sp_executesql @sql;
     """
     
     try:

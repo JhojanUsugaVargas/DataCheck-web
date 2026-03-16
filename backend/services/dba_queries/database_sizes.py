@@ -13,14 +13,14 @@ def query_database_sizes(cursor):
 
         SELECT 
             DB_NAME(database_id) AS DatabaseName,
-            CAST(SUM(CASE WHEN type = 0 THEN size END) * 8.0 / 1024 AS DECIMAL(10,2)) AS DataSizeMB,
-            CAST(SUM(CASE WHEN type = 1 THEN size END) * 8.0 / 1024 AS DECIMAL(10,2)) AS LogSizeMB,
-            CAST(SUM(size) * 8.0 / 1024 AS DECIMAL(10,2)) AS TotalSizeMB
+            CAST(SUM(CASE WHEN type = 0 THEN size END) * 8.0 / 1024 / 1024 AS DECIMAL(10,2)) AS DataSizeGB,
+            CAST(SUM(CASE WHEN type = 1 THEN size END) * 8.0 / 1024 / 1024 AS DECIMAL(10,2)) AS LogSizeGB,
+            CAST(SUM(size) * 8.0 / 1024 / 1024 AS DECIMAL(10,2)) AS TotalSizeGB
         FROM sys.master_files
         WHERE DB_NAME(database_id) IS NOT NULL
         AND DB_NAME(database_id) NOT IN ('master', 'model', 'msdb', 'tempdb')
         GROUP BY database_id
-        ORDER BY TotalSizeMB DESC;
+        ORDER BY TotalSizeGB DESC;
     """
     
     try:
@@ -31,9 +31,9 @@ def query_database_sizes(cursor):
         for row in rows:
             result.append({
                 'database': str(row[0]),
-                'data_size_mb': float(row[1]) if row[1] else 0,
-                'log_size_mb': float(row[2]) if row[2] else 0,
-                'size_mb': float(row[3]) if row[3] else 0
+                'data_size_gb': float(row[1]) if row[1] else 0,
+                'log_size_gb': float(row[2]) if row[2] else 0,
+                'size_gb': float(row[3]) if row[3] else 0
             })
         
         return result

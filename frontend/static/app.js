@@ -1824,8 +1824,8 @@ async function loadModalDatabaseSizes() {
                 data: {
                     labels: d.map(x => x.database),
                     datasets: [{
-                        label: 'Tamaño (MB)',
-                        data: d.map(x => x.size_mb),
+                        label: 'Tamaño (GB)',
+                        data: d.map(x => x.size_gb),
                         backgroundColor: 'rgba(236, 72, 153, 0.6)',
                         borderColor: '#ec4899',
                         borderWidth: 1,
